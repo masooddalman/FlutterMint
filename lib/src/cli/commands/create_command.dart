@@ -1,6 +1,7 @@
 import 'package:args/command_runner.dart';
 
 import 'package:flutterforge/src/config/project_config.dart';
+import 'package:flutterforge/src/generator/project_generator.dart';
 import 'package:flutterforge/src/modules/module_registry.dart';
 
 class CreateCommand extends Command<void> {
@@ -41,11 +42,8 @@ class CreateCommand extends Command<void> {
       );
     }
 
-    print('Creating project "${config.appName}" with modules: '
-        '${config.selectedModules.join(", ")}...');
-
-    // TODO: Call ProjectGenerator (Phase 2)
-    print('Generator not yet implemented.');
+    final generator = ProjectGenerator();
+    await generator.generate(config);
   }
 
   bool _isValidAppName(String name) {
