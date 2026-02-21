@@ -1,9 +1,14 @@
+import 'package:flutterforge/src/modules/logging_module.dart';
 import 'package:flutterforge/src/modules/module.dart';
+import 'package:flutterforge/src/modules/mvvm_module.dart';
 
 class ModuleRegistry {
   ModuleRegistry._();
 
-  static final List<Module> _allModules = [];
+  static final List<Module> _allModules = [
+    MvvmModule(),
+    LoggingModule(),
+  ];
 
   static List<Module> get allModules => _allModules;
 
