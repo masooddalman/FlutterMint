@@ -1,5 +1,6 @@
 import 'package:args/command_runner.dart';
 
+import 'package:flutterforge/src/cli/prompts/wizard.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/generator/project_generator.dart';
 import 'package:flutterforge/src/modules/module_registry.dart';
@@ -21,10 +22,8 @@ class CreateCommand extends Command<void> {
     ProjectConfig config;
 
     if (rest.isEmpty) {
-      // TODO: Interactive wizard (Phase 4)
-      print('Interactive wizard coming soon. Please provide an app name:');
-      print('  flutterforge create <app_name>');
-      return;
+      final wizard = Wizard();
+      config = await wizard.run(null);
     } else {
       final appName = rest.first;
 
