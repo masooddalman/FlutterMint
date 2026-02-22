@@ -81,25 +81,44 @@ class GithubActionsTemplate {
     }
 
     // Build platforms
-    for (final platform in cicd.platforms) {
-      buf.writeln('');
-      switch (platform) {
-        case 'apk':
-          buf.writeln('      - name: Build APK');
-          buf.writeln('        run: flutter build apk --debug');
-        case 'aab':
-          buf.writeln('      - name: Build App Bundle');
-          buf.writeln('        run: flutter build appbundle --release');
-        case 'web':
-          buf.writeln('      - name: Build Web');
-          buf.writeln('        run: flutter build web');
-        case 'ios':
-          buf.writeln('      - name: Build iOS');
-          buf.writeln('        run: flutter build ios --release --no-codesign');
+    if (cicd.isGlobalBuild) {
+      // All branches share the same platforms — no conditions needed
+      for (final platform in cicd.allPlatforms) {
+        _writeBuildStep(buf, platform);
+      }
+    } else {
+      // Per-branch builds — add `if:` conditions
+      for (final entry in cicd.branchBuilds.entries) {
+        final branch = entry.key;
+        for (final platform in entry.value) {
+          _writeBuildStep(buf, platform, branch: branch);
+        }
       }
     }
 
     buf.writeln('');
     return buf.toString();
+  }
+
+  static void _writeBuildStep(StringBuffer buf, String platform, {String? branch}) {
+    final condition = branch != null
+        ? "\n        if: github.ref == 'refs/heads/$branch'"
+        : '';
+
+    buf.writeln('');
+    switch (platform) {
+      case 'apk':
+        buf.writeln('      - name: Build APK${branch != null ? ' ($branch)' : ''}$condition');
+        buf.writeln('        run: flutter build apk --debug');
+      case 'aab':
+        buf.writeln('      - name: Build App Bundle${branch != null ? ' ($branch)' : ''}$condition');
+        buf.writeln('        run: flutter build appbundle --release');
+      case 'web':
+        buf.writeln('      - name: Build Web${branch != null ? ' ($branch)' : ''}$condition');
+        buf.writeln('        run: flutter build web');
+      case 'ios':
+        buf.writeln('      - name: Build iOS${branch != null ? ' ($branch)' : ''}$condition');
+        buf.writeln('        run: flutter build ios --release --no-codesign');
+    }
   }
 }

@@ -137,38 +137,40 @@ class ConfigCommand extends Command<void> {
       branches.addAll(extra);
     }
 
-    // Platforms
-    final selectedPlatforms = <String>['apk'];
+    // Platforms — per-branch if multiple branches, global if single
+    final branchBuilds = <String, List<String>>{};
     if (wantsPlatforms) {
       print('');
       final platformKeys = CicdConfig.platformLabels.keys.toList();
+
+      if (branches.length > 1) {
+        // Multiple branches — offer per-branch config
+        print('  ${green}Multiple branches detected — you can configure builds per branch.$reset');
+        print('');
+      }
+
       print('  Build platforms:');
       for (var i = 0; i < platformKeys.length; i++) {
         final key = platformKeys[i];
         print('    ${i + 1}. ${CicdConfig.platformLabels[key]}');
       }
-      final platformInput = PromptUtils.askText(
-        '  Enter numbers (comma-separated)',
-        defaultValue: '1',
-      );
-      final parsed = platformInput
-          .split(',')
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .map((s) {
-            final idx = int.tryParse(s);
-            if (idx != null && idx >= 1 && idx <= platformKeys.length) {
-              return platformKeys[idx - 1];
-            }
-            return null;
-          })
-          .whereType<String>()
-          .toSet()
-          .toList();
-      if (parsed.isNotEmpty) {
-        selectedPlatforms
-          ..clear()
-          ..addAll(parsed);
+      print('');
+
+      if (branches.length == 1) {
+        // Single branch — global platforms
+        final platforms = _askPlatforms(platformKeys, branches.first);
+        branchBuilds[branches.first] = platforms;
+      } else {
+        // Per-branch
+        for (final branch in branches) {
+          final platforms = _askPlatforms(platformKeys, branch);
+          branchBuilds[branch] = platforms;
+        }
+      }
+    } else {
+      // No build platforms step selected — default APK for all
+      for (final branch in branches) {
+        branchBuilds[branch] = ['apk'];
       }
     }
 
@@ -182,10 +184,12 @@ class ConfigCommand extends Command<void> {
       print('    Coverage: ${coverage ? "${green}yes (Codecov)$reset" : "no"}');
     }
     print('    Concurrency: ${concurrency ? "${green}yes$reset" : "no"}');
-    final platLabels = selectedPlatforms
-        .map((p) => CicdConfig.platformLabels[p] ?? p)
-        .join(', ');
-    print('    Platforms: $platLabels');
+    for (final entry in branchBuilds.entries) {
+      final platLabels = entry.value
+          .map((p) => CicdConfig.platformLabels[p] ?? p)
+          .join(', ');
+      print('    Builds (${entry.key}): $platLabels');
+    }
     print('');
 
     final confirm = PromptUtils.askYesNo('Proceed?', defaultValue: true);
@@ -200,7 +204,7 @@ class ConfigCommand extends Command<void> {
       caching: caching,
       coverage: coverage,
       concurrency: concurrency,
-      platforms: selectedPlatforms,
+      branchBuilds: branchBuilds,
     );
 
     // 4. Save config
@@ -227,5 +231,27 @@ class ConfigCommand extends Command<void> {
     print('CI/CD configuration saved!');
     print('  Updated: .flutterforge.yaml');
     print('  Updated: .github/workflows/ci.yml');
+  }
+
+  List<String> _askPlatforms(List<String> platformKeys, String branch) {
+    final input = PromptUtils.askText(
+      '  Platforms for "$branch"',
+      defaultValue: '1',
+    );
+    final parsed = input
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .map((s) {
+          final idx = int.tryParse(s);
+          if (idx != null && idx >= 1 && idx <= platformKeys.length) {
+            return platformKeys[idx - 1];
+          }
+          return null;
+        })
+        .whereType<String>()
+        .toSet()
+        .toList();
+    return parsed.isNotEmpty ? parsed : ['apk'];
   }
 }
