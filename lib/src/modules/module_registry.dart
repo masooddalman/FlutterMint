@@ -1,6 +1,16 @@
+import 'package:flutterforge/src/modules/ai_module.dart';
+import 'package:flutterforge/src/modules/api_module.dart';
+import 'package:flutterforge/src/modules/cicd_module.dart';
+import 'package:flutterforge/src/modules/localization_module.dart';
+import 'package:flutterforge/src/modules/locator_module.dart';
 import 'package:flutterforge/src/modules/logging_module.dart';
 import 'package:flutterforge/src/modules/module.dart';
 import 'package:flutterforge/src/modules/mvvm_module.dart';
+import 'package:flutterforge/src/modules/routing_module.dart';
+import 'package:flutterforge/src/modules/startup_module.dart';
+import 'package:flutterforge/src/modules/testing_module.dart';
+import 'package:flutterforge/src/modules/theming_module.dart';
+import 'package:flutterforge/src/modules/toast_module.dart';
 
 class ModuleRegistry {
   ModuleRegistry._();
@@ -8,6 +18,16 @@ class ModuleRegistry {
   static final List<Module> _allModules = [
     MvvmModule(),
     LoggingModule(),
+    LocatorModule(),
+    ThemingModule(),
+    RoutingModule(),
+    ApiModule(),
+    AiModule(),
+    LocalizationModule(),
+    StartupModule(),
+    ToastModule(),
+    TestingModule(),
+    CicdModule(),
   ];
 
   static List<Module> get allModules => _allModules;
