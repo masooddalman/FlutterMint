@@ -54,6 +54,12 @@ class ProjectGenerator {
     print('Resolving dependencies...');
     await _runPubGet(projectPath);
 
+    // Step 9: Generate localization files if needed
+    if (config.hasModule('localization')) {
+      print('Generating localization files...');
+      await _runGenL10n(projectPath);
+    }
+
     print('');
     print('Project "${config.appName}" created successfully!');
     print('');
@@ -122,6 +128,19 @@ linter:
     );
     if (result.exitCode != 0) {
       stderr.writeln('Warning: flutter pub get had issues:');
+      stderr.writeln(result.stderr);
+    }
+  }
+
+  Future<void> _runGenL10n(String projectPath) async {
+    final result = await Process.run(
+      'flutter',
+      ['gen-l10n'],
+      workingDirectory: projectPath,
+      runInShell: true,
+    );
+    if (result.exitCode != 0) {
+      stderr.writeln('Warning: flutter gen-l10n had issues:');
       stderr.writeln(result.stderr);
     }
   }

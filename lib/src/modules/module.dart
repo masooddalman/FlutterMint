@@ -11,6 +11,10 @@ abstract class Module {
 
   Map<String, String> get dependencies;
 
+  /// SDK dependencies like flutter_localizations.
+  /// Key: package name, Value: sdk name (e.g. 'flutter')
+  Map<String, String> get sdkDependencies => {};
+
   Map<String, String> get devDependencies;
 
   Map<String, String> generateFiles(ProjectConfig config);
