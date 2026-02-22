@@ -24,7 +24,7 @@ class CicdModule extends Module {
   @override
   Map<String, String> generateFiles(ProjectConfig config) => {
         '.github/workflows/ci.yml':
-            GithubActionsTemplate.generate(config),
+            GithubActionsTemplate.generate(config, cicdConfig: config.cicdConfig),
       };
 
   @override

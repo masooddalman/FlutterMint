@@ -34,6 +34,7 @@ class ModuleRemover {
     final projectConfig = ProjectConfig(
       appName: forgeConfig.appName,
       selectedModules: remainingIds,
+      cicdConfig: forgeConfig.cicdConfig,
     );
 
     // Step 1: Delete module-specific files
