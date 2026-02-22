@@ -54,4 +54,9 @@ $modulesYaml
     }
     return ForgeConfig(appName: appName, modules: merged);
   }
+
+  ForgeConfig withoutModules(List<String> moduleIdsToRemove) {
+    final remaining = modules.where((m) => !moduleIdsToRemove.contains(m)).toList();
+    return ForgeConfig(appName: appName, modules: remaining);
+  }
 }

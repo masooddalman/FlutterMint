@@ -54,6 +54,54 @@ class PubspecEditor {
     return lines.join('\n');
   }
 
+  Future<void> removeDependencies(
+    String projectPath,
+    Set<String> depsToRemove,
+  ) async {
+    if (depsToRemove.isEmpty) return;
+
+    final pubspecPath = p.join(projectPath, 'pubspec.yaml');
+    final file = File(pubspecPath);
+    var lines = (await file.readAsString()).split('\n');
+
+    final indicesToRemove = <int>[];
+
+    for (var i = 0; i < lines.length; i++) {
+      final trimmed = lines[i].trim();
+      // Match "  package_name: version" or "  package_name:" (sdk dep)
+      for (final dep in depsToRemove) {
+        if (trimmed.startsWith('$dep:')) {
+          indicesToRemove.add(i);
+          // Check if next line is "    sdk: flutter" (sdk dependency format)
+          if (i + 1 < lines.length && lines[i + 1].trim().startsWith('sdk:')) {
+            indicesToRemove.add(i + 1);
+          }
+          break;
+        }
+      }
+    }
+
+    // Remove lines in reverse order to preserve indices
+    for (final idx in indicesToRemove.reversed) {
+      lines.removeAt(idx);
+    }
+
+    // Remove "generate: true" under flutter: if localization deps removed
+    if (depsToRemove.contains('flutter_localizations')) {
+      lines = _removeGenerateFlag(lines);
+    }
+
+    await file.writeAsString(lines.join('\n'));
+  }
+
+  List<String> _removeGenerateFlag(List<String> lines) {
+    final idx = lines.indexWhere((l) => l.trim() == 'generate: true');
+    if (idx != -1) {
+      lines.removeAt(idx);
+    }
+    return lines;
+  }
+
   String _insertDependencies(
     String content,
     String section,
