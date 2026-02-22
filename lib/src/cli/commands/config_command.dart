@@ -99,6 +99,9 @@ class ConfigCommand extends Command<void> {
       if (existing.googlePlayUpload) {
         print('    Google Play: yes (${existing.packageName}, ${CicdConfig.trackLabels[existing.googlePlayTrack] ?? existing.googlePlayTrack})');
       }
+      if (existing.hasDeployment) {
+        print('    Auto-publish: ${existing.autoPublish ? "yes" : "no"}');
+      }
       print('');
       print('  ${dim}Modify the settings below (press Enter to keep current values).$reset');
       print('');
@@ -305,6 +308,21 @@ class ConfigCommand extends Command<void> {
       }
     }
 
+    // Publish mode
+    var autoPublish = existing?.autoPublish ?? false;
+    if (firebaseDistribution || googlePlayUpload) {
+      print('');
+      print('  Publish mode:');
+      print('    1. Upload only (manual publish from console)');
+      print('    2. Auto-publish with release notes');
+      final defaultPublishMode = autoPublish ? '2' : '1';
+      final publishInput = PromptUtils.askText(
+        '  Select publish mode',
+        defaultValue: defaultPublishMode,
+      );
+      autoPublish = publishInput.trim() == '2';
+    }
+
     // Summary
     print('');
     print('  Summary:');
@@ -328,7 +346,7 @@ class ConfigCommand extends Command<void> {
       print('    Google Play Upload: ${green}yes$reset ($packageName, ${CicdConfig.trackLabels[googlePlayTrack] ?? googlePlayTrack})');
     }
     if (firebaseDistribution || googlePlayUpload) {
-      print('    ${dim}Deployment: push events only (not PRs)$reset');
+      print('    Publish mode: ${autoPublish ? "${green}Auto-publish$reset (release notes from whatsnew/)" : "Upload only (manual publish)"}');
     }
     print('');
 
@@ -336,6 +354,20 @@ class ConfigCommand extends Command<void> {
     if (!confirm) {
       print('Cancelled.');
       return;
+    }
+
+    // Create whatsnew template if auto-publish enabled
+    var createdWhatsnew = false;
+    if (autoPublish) {
+      final whatsnewFile = p.join(projectPath, 'whatsnew', 'whatsnew-en-US');
+      if (!File(whatsnewFile).existsSync()) {
+        final fileWriter = FileWriter();
+        await fileWriter.write(
+          whatsnewFile,
+          'Bug fixes and performance improvements.\n',
+        );
+        createdWhatsnew = true;
+      }
     }
 
     final cicdConfig = CicdConfig(
@@ -350,6 +382,7 @@ class ConfigCommand extends Command<void> {
       googlePlayTrack: googlePlayTrack,
       packageName: packageName,
       firebaseGroups: firebaseGroups,
+      autoPublish: autoPublish,
     );
 
     // 5. Save config
@@ -376,6 +409,9 @@ class ConfigCommand extends Command<void> {
     print('CI/CD configuration saved!');
     print('  Updated: .flutterforge.yaml');
     print('  Updated: .github/workflows/ci.yml');
+    if (createdWhatsnew) {
+      print('  Created: whatsnew/whatsnew-en-US');
+    }
 
     // 7. Print secrets guidance
     if (firebaseDistribution || googlePlayUpload) {
@@ -397,6 +433,15 @@ class ConfigCommand extends Command<void> {
       }
       print('');
       print('  Set secrets at: https://github.com/<owner>/<repo>/settings/secrets/actions');
+    }
+
+    if (autoPublish) {
+      print('');
+      print('  ${green}Release Notes:$reset');
+      print('  ─────────────────────────────────');
+      print('  Update ${dim}whatsnew/whatsnew-en-US$reset before each release push.');
+      print('  This file is used by both Firebase and Google Play for release notes.');
+      print('  ${dim}Tip: Add additional locale files like whatsnew-de-DE for Google Play.$reset');
     }
   }
 

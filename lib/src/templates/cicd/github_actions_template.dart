@@ -150,6 +150,7 @@ class GithubActionsTemplate {
           file: 'build/app/outputs/flutter-apk/app-debug.apk',
           ifCondition: ifCondition,
           groups: cicd.firebaseGroups,
+          releaseNotesFile: cicd.autoPublish ? 'whatsnew/whatsnew-en-US' : null,
         );
       } else if (platform == 'aab') {
         _writeFirebaseStep(
@@ -158,6 +159,7 @@ class GithubActionsTemplate {
           file: 'build/app/outputs/bundle/release/app-release.aab',
           ifCondition: ifCondition,
           groups: cicd.firebaseGroups,
+          releaseNotesFile: cicd.autoPublish ? 'whatsnew/whatsnew-en-US' : null,
         );
       }
     }
@@ -173,6 +175,10 @@ class GithubActionsTemplate {
       buf.writeln('          packageName: ${cicd.packageName}');
       buf.writeln('          releaseFiles: build/app/outputs/bundle/release/app-release.aab');
       buf.writeln('          track: ${cicd.googlePlayTrack}');
+      if (cicd.autoPublish) {
+        buf.writeln('          status: completed');
+        buf.writeln('          whatsNewDirectory: whatsnew/');
+      }
     }
   }
 
@@ -182,6 +188,7 @@ class GithubActionsTemplate {
     required String file,
     required String ifCondition,
     required String groups,
+    String? releaseNotesFile,
   }) {
     buf.writeln('');
     buf.writeln('      - name: $label');
@@ -192,5 +199,8 @@ class GithubActionsTemplate {
     buf.writeln('          serviceCredentialsFileContent: \${{ secrets.FIREBASE_SERVICE_ACCOUNT }}');
     buf.writeln('          groups: $groups');
     buf.writeln('          file: $file');
+    if (releaseNotesFile != null) {
+      buf.writeln('          releaseNotesFile: $releaseNotesFile');
+    }
   }
 }

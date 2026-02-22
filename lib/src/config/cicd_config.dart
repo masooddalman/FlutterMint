@@ -13,6 +13,7 @@ class CicdConfig {
     this.googlePlayTrack = 'internal',
     this.packageName = '',
     this.firebaseGroups = 'testers',
+    this.autoPublish = false,
   });
 
   final List<String> branches;
@@ -32,6 +33,7 @@ class CicdConfig {
   final String googlePlayTrack;
   final String packageName;
   final String firebaseGroups;
+  final bool autoPublish;
 
   /// Get platforms for a specific branch.
   List<String> platformsForBranch(String branch) {
@@ -70,6 +72,7 @@ class CicdConfig {
     concurrency: false,
     firebaseDistribution: false,
     googlePlayUpload: false,
+    autoPublish: false,
   );
 
   static CicdConfig? fromYaml(YamlMap? yaml) {
@@ -107,6 +110,7 @@ class CicdConfig {
     var googlePlayTrack = 'internal';
     var packageName = '';
     var firebaseGroups = 'testers';
+    var autoPublish = false;
 
     if (deployYaml is YamlMap) {
       firebaseDistribution =
@@ -116,6 +120,7 @@ class CicdConfig {
           deployYaml['google_play_track'] as String? ?? 'internal';
       packageName = deployYaml['package_name'] as String? ?? '';
       firebaseGroups = deployYaml['firebase_groups'] as String? ?? 'testers';
+      autoPublish = deployYaml['auto_publish'] as bool? ?? false;
     }
 
     return CicdConfig(
@@ -130,6 +135,7 @@ class CicdConfig {
       googlePlayTrack: googlePlayTrack,
       packageName: packageName,
       firebaseGroups: firebaseGroups,
+      autoPublish: autoPublish,
     );
   }
 
@@ -162,6 +168,7 @@ class CicdConfig {
         lines.add('    google_play_track: $googlePlayTrack');
         lines.add('    package_name: $packageName');
       }
+      lines.add('    auto_publish: $autoPublish');
     }
     return lines;
   }
