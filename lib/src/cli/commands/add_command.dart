@@ -113,29 +113,28 @@ class AddCommand extends Command<void> {
     ForgeConfig forgeConfig,
   ) {
     print('');
-    print('Select modules to add:');
-    print('');
-
-    final selected = <String>[];
+    print('Available modules:');
     for (var i = 0; i < availableModules.length; i++) {
       final module = availableModules[i];
-      PromptUtils.printStep(i + 1, availableModules.length, module.displayName);
-
-      // Show dependency info
-      if (module.dependsOn.isNotEmpty) {
-        final unmetDeps = module.dependsOn.where(
-          (d) => !forgeConfig.modules.contains(d) && !selected.contains(d),
-        );
-        if (unmetDeps.isNotEmpty) {
-          print('    (will auto-include: ${unmetDeps.join(", ")})');
-        }
-      }
-
-      final include = PromptUtils.askYesNo('  Add ${module.displayName}?');
-      if (include) {
-        selected.add(module.id);
-      }
+      final depInfo = module.dependsOn.isNotEmpty
+          ? ' (requires: ${module.dependsOn.join(", ")})'
+          : '';
+      print('  ${i + 1}. ${module.displayName} (${module.id})$depInfo');
     }
-    return selected;
+    print('');
+
+    final input = PromptUtils.askText(
+      'Enter module name to add (or "cancel" to abort)',
+    );
+
+    if (input.toLowerCase() == 'cancel') return [];
+
+    final match = availableModules.where((m) => m.id == input).firstOrNull;
+    if (match == null) {
+      print('Unknown module "$input". Please enter a valid module id.');
+      return _interactiveSelect(availableModules, forgeConfig);
+    }
+
+    return [match.id];
   }
 }
