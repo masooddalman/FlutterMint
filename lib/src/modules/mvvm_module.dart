@@ -1,6 +1,7 @@
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/modules/module.dart';
 import 'package:flutterforge/src/templates/mvvm/home_feature_template.dart';
+import 'package:flutterforge/src/templates/mvvm/usecase_template.dart';
 import 'package:flutterforge/src/templates/mvvm/view_template.dart';
 import 'package:flutterforge/src/templates/mvvm/viewmodel_template.dart';
 
@@ -30,6 +31,12 @@ class MvvmModule extends Module {
         'lib/core/base/base_viewmodel.dart':
             ViewModelTemplate.generate(config),
         'lib/core/base/base_view.dart': ViewTemplate.generate(config),
+        'lib/domain/repositories/home_repository.dart':
+            UseCaseTemplate.generateHomeRepositoryInterface(config),
+        'lib/data/repositories/home_repository.dart':
+            UseCaseTemplate.generateHomeRepositoryImpl(config),
+        'lib/domain/usecases/get_home_data_usecase.dart':
+            UseCaseTemplate.generateGetHomeDataUseCase(config),
         'lib/features/home/models/home_model.dart':
             HomeFeatureTemplate.generateModel(config),
         'lib/features/home/viewmodels/home_viewmodel.dart':
@@ -45,10 +52,17 @@ class MvvmModule extends Module {
   List<String> mainSetupLines(ProjectConfig config) => [];
 
   @override
-  List<String> locatorImports(ProjectConfig config) => [];
+  List<String> locatorImports(ProjectConfig config) => [
+        'package:${config.appNameSnakeCase}/data/repositories/home_repository.dart',
+        'package:${config.appNameSnakeCase}/domain/repositories/home_repository.dart',
+        'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart',
+      ];
 
   @override
-  List<String> locatorRegistrations(ProjectConfig config) => [];
+  List<String> locatorRegistrations(ProjectConfig config) => [
+        'locator.registerLazySingleton<HomeRepository>(() => HomeRepositoryImpl());',
+        'locator.registerLazySingleton(() => GetHomeDataUseCase(locator<HomeRepository>()));',
+      ];
 
   @override
   List<String> providerDeclarations(ProjectConfig config) => [];

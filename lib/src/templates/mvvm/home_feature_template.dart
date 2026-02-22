@@ -21,13 +21,18 @@ class HomeFeatureTemplate {
         ? "import 'package:${config.appNameSnakeCase}/core/services/logger_service.dart';\n"
         : '';
     final loggerCall = config.hasModule('logging')
-        ? "\n    LoggerService.info('Home data loaded');"
+        ? "\n      LoggerService.info('Home data loaded');"
         : '';
 
     return '''import 'package:${config.appNameSnakeCase}/core/base/base_viewmodel.dart';
+import 'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart';
 import 'package:${config.appNameSnakeCase}/features/home/models/home_model.dart';
 $loggerImport
 class HomeViewModel extends BaseViewModel {
+  HomeViewModel(this._getHomeData);
+
+  final GetHomeDataUseCase _getHomeData;
+
   HomeModel? _homeData;
 
   HomeModel? get homeData => _homeData;
@@ -36,12 +41,7 @@ class HomeViewModel extends BaseViewModel {
     setBusy(true);
     clearError();
     try {
-      // Simulate loading data
-      await Future.delayed(const Duration(seconds: 1));
-      _homeData = const HomeModel(
-        title: 'Welcome to ${config.appNamePascalCase}',
-        description: 'Your project is set up and ready to go!',
-      );$loggerCall
+      _homeData = await _getHomeData();$loggerCall
     } catch (e) {
       setError(e.toString());
     } finally {
@@ -53,17 +53,32 @@ class HomeViewModel extends BaseViewModel {
   }
 
   static String generateView(ProjectConfig config) {
+    final hasLocator = config.hasModule('locator');
+
+    final locatorImport = hasLocator
+        ? "import 'package:${config.appNameSnakeCase}/app/locator.dart';\n"
+        : '';
+    final nonLocatorImports = hasLocator
+        ? ''
+        : "import 'package:${config.appNameSnakeCase}/data/repositories/home_repository.dart';\n"
+            "import 'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart';\n";
+
+    final createVm = hasLocator
+        ? 'final viewModel = HomeViewModel(locator<GetHomeDataUseCase>());'
+        : '''final useCase = GetHomeDataUseCase(HomeRepositoryImpl());
+    final viewModel = HomeViewModel(useCase);''';
+
     return '''import 'package:flutter/material.dart';
 
 import 'package:${config.appNameSnakeCase}/core/base/base_view.dart';
 import 'package:${config.appNameSnakeCase}/features/home/viewmodels/home_viewmodel.dart';
-
+$locatorImport$nonLocatorImports
 class HomeView extends BaseView<HomeViewModel> {
   const HomeView({super.key});
 
   @override
   HomeViewModel createViewModel(BuildContext context) {
-    final viewModel = HomeViewModel();
+    $createVm
     viewModel.loadData();
     return viewModel;
   }
