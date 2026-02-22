@@ -47,6 +47,10 @@ class ${config.appNamePascalCase}App extends StatelessWidget {
     bool hasTheming,
     bool hasLocalization,
   ) {
+    final hasToast = config.hasModule('toast');
+    final toastLine = hasToast
+        ? '\n      scaffoldMessengerKey: ToastService.messengerKey,'
+        : '';
     final themeLines = hasTheming
         ? '''
       theme: AppTheme.lightTheme,
@@ -66,7 +70,7 @@ class ${config.appNamePascalCase}App extends StatelessWidget {
 
     return '''MaterialApp.router(
       title: '${config.appNamePascalCase}',
-      debugShowCheckedModeBanner: false,$themeLines$localizationLines
+      debugShowCheckedModeBanner: false,$toastLine$themeLines$localizationLines
       routerConfig: AppRouter.router,
     )''';
   }
@@ -76,6 +80,10 @@ class ${config.appNamePascalCase}App extends StatelessWidget {
     bool hasTheming,
     bool hasLocalization,
   ) {
+    final hasToast = config.hasModule('toast');
+    final toastLine = hasToast
+        ? '\n      scaffoldMessengerKey: ToastService.messengerKey,'
+        : '';
     final themeLines = hasTheming
         ? '''
       theme: AppTheme.lightTheme,
@@ -95,7 +103,7 @@ class ${config.appNamePascalCase}App extends StatelessWidget {
 
     return '''MaterialApp(
       title: '${config.appNamePascalCase}',
-      debugShowCheckedModeBanner: false,$themeLines$localizationLines
+      debugShowCheckedModeBanner: false,$toastLine$themeLines$localizationLines
       home: const HomeView(),
     )''';
   }
