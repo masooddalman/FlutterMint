@@ -80,18 +80,22 @@ class GithubActionsTemplate {
       buf.writeln('        run: flutter test');
     }
 
-    // Build platforms
+    // Build platforms + deployment
     if (cicd.isGlobalBuild) {
-      // All branches share the same platforms — no conditions needed
       for (final platform in cicd.allPlatforms) {
         _writeBuildStep(buf, platform);
+        if (cicd.hasDeployment) {
+          _writeDeploySteps(buf, platform, cicd);
+        }
       }
     } else {
-      // Per-branch builds — add `if:` conditions
       for (final entry in cicd.branchBuilds.entries) {
         final branch = entry.key;
         for (final platform in entry.value) {
           _writeBuildStep(buf, platform, branch: branch);
+          if (cicd.hasDeployment) {
+            _writeDeploySteps(buf, platform, cicd, branch: branch);
+          }
         }
       }
     }
@@ -120,5 +124,73 @@ class GithubActionsTemplate {
         buf.writeln('      - name: Build iOS${branch != null ? ' ($branch)' : ''}$condition');
         buf.writeln('        run: flutter build ios --release --no-codesign');
     }
+  }
+
+  static void _writeDeploySteps(
+    StringBuffer buf,
+    String platform,
+    CicdConfig cicd, {
+    String? branch,
+  }) {
+    if (platform != 'apk' && platform != 'aab') return;
+
+    // Build if: condition — always push-only, plus optional branch
+    final conditions = <String>["github.event_name == 'push'"];
+    if (branch != null) {
+      conditions.add("github.ref == 'refs/heads/$branch'");
+    }
+    final ifCondition = conditions.join(' && ');
+
+    // Firebase App Distribution
+    if (cicd.firebaseDistribution) {
+      if (platform == 'apk') {
+        _writeFirebaseStep(
+          buf,
+          label: 'Deploy APK to Firebase${branch != null ? ' ($branch)' : ''}',
+          file: 'build/app/outputs/flutter-apk/app-debug.apk',
+          ifCondition: ifCondition,
+          groups: cicd.firebaseGroups,
+        );
+      } else if (platform == 'aab') {
+        _writeFirebaseStep(
+          buf,
+          label: 'Deploy AAB to Firebase${branch != null ? ' ($branch)' : ''}',
+          file: 'build/app/outputs/bundle/release/app-release.aab',
+          ifCondition: ifCondition,
+          groups: cicd.firebaseGroups,
+        );
+      }
+    }
+
+    // Google Play (AAB only)
+    if (cicd.googlePlayUpload && platform == 'aab') {
+      buf.writeln('');
+      buf.writeln('      - name: Upload to Google Play${branch != null ? ' ($branch)' : ''}');
+      buf.writeln('        if: $ifCondition');
+      buf.writeln('        uses: r0adkll/upload-google-play@v1');
+      buf.writeln('        with:');
+      buf.writeln('          serviceAccountJsonPlainText: \${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}');
+      buf.writeln('          packageName: ${cicd.packageName}');
+      buf.writeln('          releaseFiles: build/app/outputs/bundle/release/app-release.aab');
+      buf.writeln('          track: ${cicd.googlePlayTrack}');
+    }
+  }
+
+  static void _writeFirebaseStep(
+    StringBuffer buf, {
+    required String label,
+    required String file,
+    required String ifCondition,
+    required String groups,
+  }) {
+    buf.writeln('');
+    buf.writeln('      - name: $label');
+    buf.writeln('        if: $ifCondition');
+    buf.writeln('        uses: wzieba/Firebase-Distribution-Github-Action@v1');
+    buf.writeln('        with:');
+    buf.writeln('          appId: \${{ secrets.FIREBASE_APP_ID }}');
+    buf.writeln('          serviceCredentialsFileContent: \${{ secrets.FIREBASE_SERVICE_ACCOUNT }}');
+    buf.writeln('          groups: $groups');
+    buf.writeln('          file: $file');
   }
 }
