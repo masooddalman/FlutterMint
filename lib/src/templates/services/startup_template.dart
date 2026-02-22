@@ -65,19 +65,20 @@ import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
 class StartupViewModel extends BaseViewModel {
   final StartupService _startupService = StartupService();
 
-  StartupState get startupState => _startupService.state;
-  String? get startupError => _startupService.errorMessage;
-
   Future<void> initialize() async {
-    setBusy(true);
+    setLoading();
     await _startupService.initialize();
-    setBusy(false);
+    switch (_startupService.state) {
+      case StartupState.success:
+        setSuccess();
+      case StartupState.error:
+        setError(_startupService.errorMessage ?? 'Initialization failed');
+      case StartupState.loading:
+        break;
+    }
   }
 
-  Future<void> retry() async {
-    clearError();
-    await initialize();
-  }
+  Future<void> retry() => initialize();
 }
 ''';
   }
@@ -95,7 +96,7 @@ class StartupViewModel extends BaseViewModel {
 
 import 'package:provider/provider.dart';
 
-import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
+import 'package:${config.appNameSnakeCase}/core/base/base_viewmodel.dart';
 import 'package:${config.appNameSnakeCase}/app/startup/startup_viewmodel.dart';
 $locatorImport
 class StartupView extends StatelessWidget {
@@ -109,7 +110,7 @@ class StartupView extends StatelessWidget {
       create: (_) {
         final viewModel = $createVm;
         viewModel.initialize().then((_) {
-          if (viewModel.startupState == StartupState.success) {
+          if (viewModel.state == ViewState.success) {
             onReady();
           }
         });
@@ -128,8 +129,9 @@ class StartupView extends StatelessWidget {
   }
 
   Widget _buildContent(StartupViewModel viewModel) {
-    switch (viewModel.startupState) {
-      case StartupState.loading:
+    switch (viewModel.state) {
+      case ViewState.initial:
+      case ViewState.loading:
         return const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -138,15 +140,15 @@ class StartupView extends StatelessWidget {
             Text('Initializing...'),
           ],
         );
-      case StartupState.success:
+      case ViewState.success:
         return const Icon(Icons.check_circle, size: 64, color: Colors.green);
-      case StartupState.error:
+      case ViewState.error:
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(viewModel.startupError ?? 'An error occurred'),
+            Text(viewModel.errorMessage ?? 'An error occurred'),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: viewModel.retry,

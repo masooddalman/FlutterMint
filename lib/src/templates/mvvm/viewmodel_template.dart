@@ -6,65 +6,71 @@ class ViewModelTemplate {
   static String generate(ProjectConfig config) {
     return '''import 'package:flutter/foundation.dart';
 
+enum ViewState { initial, loading, success, error }
+
 abstract class BaseViewModel extends ChangeNotifier {
   bool _isDisposed = false;
-  final Set<String> _busyKeys = {};
-  final Map<String, String> _errors = {};
 
-  static const String _globalKey = '_global';
+  // --- Screen-level state (enum) ---
 
-  // --- Busy state ---
+  ViewState _state = ViewState.initial;
+  String? _errorMessage;
 
-  /// True if any operation is in progress.
-  bool get isBusy => _busyKeys.isNotEmpty;
+  ViewState get state => _state;
+  String? get errorMessage => _errorMessage;
+  bool get isBusy => _state == ViewState.loading;
+  bool get hasError => _state == ViewState.error;
 
-  /// True if the operation identified by [key] is in progress.
-  bool busy(String key) => _busyKeys.contains(key);
+  void setLoading() {
+    _state = ViewState.loading;
+    _errorMessage = null;
+    _notify();
+  }
 
-  /// Set the global busy state (for simple single-operation screens).
-  void setBusy(bool value) => setBusyForKey(_globalKey, value);
+  void setSuccess() {
+    _state = ViewState.success;
+    _errorMessage = null;
+    _notify();
+  }
 
-  /// Set the busy state for a specific operation.
-  void setBusyForKey(String key, bool value) {
+  void setError(String message) {
+    _state = ViewState.error;
+    _errorMessage = message;
+    _notify();
+  }
+
+  // --- Per-operation state (for parallel calls on one screen) ---
+
+  final Map<String, ViewState> _keyStates = {};
+  final Map<String, String> _keyErrors = {};
+
+  ViewState stateOf(String key) => _keyStates[key] ?? ViewState.initial;
+  String? errorFor(String key) => _keyErrors[key];
+  bool busy(String key) => stateOf(key) == ViewState.loading;
+
+  void setLoadingForKey(String key) =>
+      _setStateForKey(key, ViewState.loading);
+
+  void setSuccessForKey(String key) =>
+      _setStateForKey(key, ViewState.success);
+
+  void setErrorForKey(String key, String message) =>
+      _setStateForKey(key, ViewState.error, error: message);
+
+  void _setStateForKey(String key, ViewState state, {String? error}) {
     if (_isDisposed) return;
-    if (value) {
-      _busyKeys.add(key);
+    _keyStates[key] = state;
+    if (state == ViewState.error && error != null) {
+      _keyErrors[key] = error;
     } else {
-      _busyKeys.remove(key);
+      _keyErrors.remove(key);
     }
     notifyListeners();
   }
 
-  // --- Error state ---
-
-  /// The global error message (from [setError]).
-  String? get errorMessage => _errors[_globalKey];
-
-  /// The error message for a specific operation.
-  String? errorFor(String key) => _errors[key];
-
-  /// True if any error exists.
-  bool get hasError => _errors.isNotEmpty;
-
-  /// Set the global error message.
-  void setError(String? message) => setErrorForKey(_globalKey, message);
-
-  /// Set the error message for a specific operation.
-  void setErrorForKey(String key, String? message) {
-    if (_isDisposed) return;
-    if (message == null) {
-      _errors.remove(key);
-    } else {
-      _errors[key] = message;
-    }
-    notifyListeners();
+  void _notify() {
+    if (!_isDisposed) notifyListeners();
   }
-
-  /// Clear the global error.
-  void clearError() => setError(null);
-
-  /// Clear the error for a specific operation.
-  void clearErrorForKey(String key) => setErrorForKey(key, null);
 
   @override
   void dispose() {

@@ -37,6 +37,7 @@ Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
   static String generateUnitTestExample(ProjectConfig config) {
     return '''import 'package:flutter_test/flutter_test.dart';
 
+import 'package:${config.appNameSnakeCase}/core/base/base_viewmodel.dart';
 import 'package:${config.appNameSnakeCase}/data/repositories/home_repository.dart';
 import 'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart';
 import 'package:${config.appNameSnakeCase}/features/home/viewmodels/home_viewmodel.dart';
@@ -49,21 +50,24 @@ void main() {
       viewModel = HomeViewModel(GetHomeDataUseCase(HomeRepositoryImpl()));
     });
 
-    test('initial state is not busy', () {
+    test('initial state is initial', () {
+      expect(viewModel.state, ViewState.initial);
       expect(viewModel.isBusy, isFalse);
     });
 
     test('initial state has no error', () {
       expect(viewModel.errorMessage, isNull);
+      expect(viewModel.hasError, isFalse);
     });
 
     test('initial state has no data', () {
       expect(viewModel.homeData, isNull);
     });
 
-    test('loadData sets data after completion', () async {
+    test('loadData sets data and success state', () async {
       await viewModel.loadData();
 
+      expect(viewModel.state, ViewState.success);
       expect(viewModel.homeData, isNotNull);
       expect(viewModel.homeData!.title, contains('Welcome'));
       expect(viewModel.isBusy, isFalse);

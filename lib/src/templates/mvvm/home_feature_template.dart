@@ -38,14 +38,12 @@ class HomeViewModel extends BaseViewModel {
   HomeModel? get homeData => _homeData;
 
   Future<void> loadData() async {
-    setBusy(true);
-    clearError();
+    setLoading();
     try {
       _homeData = await _getHomeData();$loggerCall
+      setSuccess();
     } catch (e) {
       setError(e.toString());
-    } finally {
-      setBusy(false);
     }
   }
 }
@@ -71,6 +69,7 @@ class HomeViewModel extends BaseViewModel {
 
 import 'package:provider/provider.dart';
 
+import 'package:${config.appNameSnakeCase}/core/base/base_viewmodel.dart';
 import 'package:${config.appNameSnakeCase}/features/home/viewmodels/home_viewmodel.dart';
 $locatorImport$nonLocatorImports
 class HomeView extends StatelessWidget {
@@ -94,48 +93,47 @@ class HomeView extends StatelessWidget {
   }
 
   Widget _buildBody(HomeViewModel viewModel) {
-    if (viewModel.isBusy) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (viewModel.errorMessage != null) {
-      return Center(
-        child: Text(
-          viewModel.errorMessage!,
-          style: const TextStyle(color: Colors.red),
-        ),
-      );
-    }
-
-    final data = viewModel.homeData;
-    if (data == null) {
-      return const Center(child: Text('No data'));
-    }
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              data.title,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+    switch (viewModel.state) {
+      case ViewState.initial:
+      case ViewState.loading:
+        return const Center(child: CircularProgressIndicator());
+      case ViewState.error:
+        return Center(
+          child: Text(
+            viewModel.errorMessage ?? 'An error occurred',
+            style: const TextStyle(color: Colors.red),
+          ),
+        );
+      case ViewState.success:
+        final data = viewModel.homeData;
+        if (data == null) {
+          return const Center(child: Text('No data'));
+        }
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  data.title,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  data.description,
+                  style: const TextStyle(fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              data.description,
-              style: const TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
+    }
   }
 }
 ''';
