@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:flutterforge/src/config/forge_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/generator/file_writer.dart';
 import 'package:flutterforge/src/generator/pubspec_editor.dart';
@@ -68,6 +69,13 @@ class ProjectGenerator {
       _printStep(6, 'Generating localization files...');
       await _runGenL10n(projectPath);
     }
+
+    // Step 10: Write .flutterforge.yaml config
+    final forgeConfig = ForgeConfig(
+      appName: config.appName,
+      modules: config.selectedModules,
+    );
+    await forgeConfig.save(projectPath);
 
     stopwatch.stop();
     final seconds = (stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1);

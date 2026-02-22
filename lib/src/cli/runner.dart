@@ -2,13 +2,17 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
+import 'package:flutterforge/src/cli/commands/add_command.dart';
 import 'package:flutterforge/src/cli/commands/create_command.dart';
+import 'package:flutterforge/src/cli/commands/status_command.dart';
 import 'package:flutterforge/src/config/constants.dart';
 
 class FlutterForgeRunner extends CommandRunner<void> {
   FlutterForgeRunner()
       : super(Constants.toolName, Constants.description) {
     addCommand(CreateCommand());
+    addCommand(AddCommand());
+    addCommand(StatusCommand());
     argParser.addFlag(
       'version',
       abbr: 'v',

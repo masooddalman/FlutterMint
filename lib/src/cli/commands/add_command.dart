@@ -1,0 +1,141 @@
+import 'dart:io';
+
+import 'package:args/command_runner.dart';
+
+import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
+import 'package:flutterforge/src/config/forge_config.dart';
+import 'package:flutterforge/src/generator/module_adder.dart';
+import 'package:flutterforge/src/modules/module.dart';
+import 'package:flutterforge/src/modules/module_registry.dart';
+
+class AddCommand extends Command<void> {
+  @override
+  final String name = 'add';
+
+  @override
+  final String description = 'Add a module to an existing FlutterForge project.';
+
+  @override
+  Future<void> run() async {
+    final projectPath = Directory.current.path;
+
+    // 1. Load existing config
+    final forgeConfig = ForgeConfig.load(projectPath);
+    if (forgeConfig == null) {
+      stderr.writeln(
+        'Error: No FlutterForge project found in the current directory.',
+      );
+      stderr.writeln(
+        'Make sure you are inside a project created with "flutterforge create".',
+      );
+      return;
+    }
+
+    // 2. Find available modules (not yet installed)
+    final allModules = ModuleRegistry.allModules;
+    final availableModules =
+        allModules.where((m) => !forgeConfig.modules.contains(m.id)).toList();
+
+    if (availableModules.isEmpty) {
+      print('All modules are already installed!');
+      return;
+    }
+
+    // 3. Get module IDs to add
+    final rest = argResults?.rest ?? [];
+    List<String> moduleIdsToAdd;
+
+    if (rest.isEmpty) {
+      // Interactive mode
+      moduleIdsToAdd = _interactiveSelect(availableModules, forgeConfig);
+      if (moduleIdsToAdd.isEmpty) {
+        print('No modules selected.');
+        return;
+      }
+    } else {
+      // Direct mode
+      final requestedId = rest.first;
+
+      final moduleExists = allModules.any((m) => m.id == requestedId);
+      if (!moduleExists) {
+        stderr.writeln('Error: Unknown module "$requestedId".');
+        stderr.writeln(
+          'Available modules: ${availableModules.map((m) => m.id).join(", ")}',
+        );
+        return;
+      }
+
+      if (forgeConfig.modules.contains(requestedId)) {
+        print('Module "$requestedId" is already installed.');
+        return;
+      }
+
+      moduleIdsToAdd = [requestedId];
+    }
+
+    // 4. Auto-resolve dependencies
+    final resolvedIds = <String>[...moduleIdsToAdd];
+    for (final id in moduleIdsToAdd) {
+      final module = allModules.firstWhere((m) => m.id == id);
+      for (final depId in module.dependsOn) {
+        if (!forgeConfig.modules.contains(depId) &&
+            !resolvedIds.contains(depId)) {
+          resolvedIds.add(depId);
+          print('  Auto-including dependency: $depId');
+        }
+      }
+    }
+
+    // 5. Confirmation
+    print('');
+    print('Modules to add:');
+    for (final id in resolvedIds) {
+      final module = allModules.firstWhere((m) => m.id == id);
+      print('  + ${module.displayName}');
+    }
+    print('');
+    print('Note: main.dart, app.dart, and locator.dart will be regenerated.');
+    print('');
+    final confirm = PromptUtils.askYesNo('Proceed?', defaultValue: true);
+    if (!confirm) {
+      print('Cancelled.');
+      return;
+    }
+
+    // 6. Execute
+    print('');
+    final adder = ModuleAdder();
+    await adder.add(projectPath, forgeConfig, resolvedIds);
+  }
+
+  List<String> _interactiveSelect(
+    List<Module> availableModules,
+    ForgeConfig forgeConfig,
+  ) {
+    print('');
+    print('Select modules to add:');
+    print('');
+
+    final selected = <String>[];
+    for (var i = 0; i < availableModules.length; i++) {
+      final module = availableModules[i];
+      PromptUtils.printStep(i + 1, availableModules.length, module.displayName);
+
+      // Show dependency info
+      if (module.dependsOn.isNotEmpty) {
+        final unmetDeps = module.dependsOn.where(
+          (d) => !forgeConfig.modules.contains(d) && !selected.contains(d),
+        );
+        if (unmetDeps.isNotEmpty) {
+          print('    (will auto-include: ${unmetDeps.join(", ")})');
+        }
+      }
+
+      final include = PromptUtils.askYesNo('  Add ${module.displayName}?');
+      if (include) {
+        selected.add(module.id);
+      }
+    }
+    return selected;
+  }
+}
