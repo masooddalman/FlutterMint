@@ -39,18 +39,28 @@ class StartupModule extends Module {
 
   @override
   List<String> locatorImports(ProjectConfig config) => config.hasModule('locator')
-      ? ['package:${config.appNameSnakeCase}/app/startup/startup_service.dart']
+      ? [
+          'package:${config.appNameSnakeCase}/app/startup/startup_service.dart',
+          'package:${config.appNameSnakeCase}/app/startup/startup_viewmodel.dart',
+        ]
       : [];
 
   @override
   List<String> locatorRegistrations(ProjectConfig config) =>
       config.hasModule('locator')
-          ? ['locator.registerLazySingleton<StartupService>(() => StartupService());']
+          ? [
+              'locator.registerLazySingleton<StartupService>(() => StartupService());',
+              'locator.registerFactory(() => StartupViewModel());',
+            ]
           : [];
 
   @override
   List<String> providerDeclarations(ProjectConfig config) => [];
 
   @override
-  List<String> appImports(ProjectConfig config) => [];
+  List<String> appImports(ProjectConfig config) => config.hasModule('routing')
+      ? []
+      : [
+          'package:${config.appNameSnakeCase}/app/startup/startup_view.dart',
+        ];
 }

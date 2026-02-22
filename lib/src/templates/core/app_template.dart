@@ -12,6 +12,7 @@ class AppTemplate {
     final hasTheming = config.hasModule('theming');
     final hasLocalization = config.hasModule('localization');
     final hasProviders = providerDeclarations.isNotEmpty;
+    final hasStartupFlow = config.hasModule('startup') && !hasRouting;
 
     final importBlock = imports.isNotEmpty
         ? imports.map((i) => "import '$i';").join('\n')
@@ -19,7 +20,7 @@ class AppTemplate {
 
     final materialApp = hasRouting
         ? _routerMaterialApp(config, hasTheming, hasLocalization)
-        : _simpleMaterialApp(config, hasTheming, hasLocalization);
+        : _simpleMaterialApp(config, hasTheming, hasLocalization, hasStartupFlow);
 
     final body = hasProviders
         ? _wrapWithMultiProvider(materialApp, providerDeclarations)
@@ -28,6 +29,27 @@ class AppTemplate {
     final providerImport = hasProviders
         ? "import 'package:provider/provider.dart';\n"
         : '';
+
+    if (hasStartupFlow) {
+      return '''import 'package:flutter/material.dart';
+$providerImport${importBlock.isNotEmpty ? '$importBlock\n' : ''}
+class ${config.appNamePascalCase}App extends StatefulWidget {
+  const ${config.appNamePascalCase}App({super.key});
+
+  @override
+  State<${config.appNamePascalCase}App> createState() => _${config.appNamePascalCase}AppState();
+}
+
+class _${config.appNamePascalCase}AppState extends State<${config.appNamePascalCase}App> {
+  bool _ready = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return $body;
+  }
+}
+''';
+    }
 
     return '''import 'package:flutter/material.dart';
 $providerImport${importBlock.isNotEmpty ? '$importBlock\n' : ''}
@@ -79,6 +101,7 @@ class ${config.appNamePascalCase}App extends StatelessWidget {
     ProjectConfig config,
     bool hasTheming,
     bool hasLocalization,
+    bool hasStartup,
   ) {
     final hasToast = config.hasModule('toast');
     final toastLine = hasToast
@@ -101,10 +124,17 @@ class ${config.appNamePascalCase}App extends StatelessWidget {
       supportedLocales: AppLocalizations.supportedLocales,'''
         : '';
 
+    final homeLine = hasStartup
+        ? '''
+      home: _ready
+          ? const HomeView()
+          : StartupView(onReady: () => setState(() => _ready = true)),'''
+        : '''
+      home: const HomeView(),''';
+
     return '''MaterialApp(
       title: '${config.appNamePascalCase}',
-      debugShowCheckedModeBanner: false,$toastLine$themeLines$localizationLines
-      home: const HomeView(),
+      debugShowCheckedModeBanner: false,$toastLine$themeLines$localizationLines$homeLine
     )''';
   }
 

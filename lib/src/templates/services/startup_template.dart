@@ -65,58 +65,73 @@ import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
 class StartupViewModel extends BaseViewModel {
   final StartupService _startupService = StartupService();
 
-  StartupState get startupState => _startupService.state;
-  String? get startupError => _startupService.errorMessage;
-
   Future<void> initialize() async {
-    setBusy(true);
+    setLoading();
     await _startupService.initialize();
-    setBusy(false);
+    switch (_startupService.state) {
+      case StartupState.success:
+        setSuccess();
+      case StartupState.error:
+        setError(_startupService.errorMessage ?? 'Initialization failed');
+      case StartupState.loading:
+        break;
+    }
   }
 
-  Future<void> retry() async {
-    clearError();
-    await initialize();
-  }
+  Future<void> retry() => initialize();
 }
 ''';
   }
 
   static String generateStartupView(ProjectConfig config) {
+    final hasLocator = config.hasModule('locator');
+    final locatorImport = hasLocator
+        ? "import 'package:${config.appNameSnakeCase}/app/locator.dart';\n"
+        : '';
+    final createVm = hasLocator
+        ? 'locator<StartupViewModel>()'
+        : 'StartupViewModel()';
+
     return '''import 'package:flutter/material.dart';
 
-import 'package:${config.appNameSnakeCase}/core/base/base_view.dart';
-import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
-import 'package:${config.appNameSnakeCase}/app/startup/startup_viewmodel.dart';
+import 'package:provider/provider.dart';
 
-class StartupView extends BaseView<StartupViewModel> {
+import 'package:${config.appNameSnakeCase}/core/base/base_viewmodel.dart';
+import 'package:${config.appNameSnakeCase}/app/startup/startup_viewmodel.dart';
+$locatorImport
+class StartupView extends StatelessWidget {
   const StartupView({super.key, required this.onReady});
 
   final VoidCallback onReady;
 
   @override
-  StartupViewModel createViewModel(BuildContext context) {
-    final viewModel = StartupViewModel();
-    viewModel.initialize().then((_) {
-      if (viewModel.startupState == StartupState.success) {
-        onReady();
-      }
-    });
-    return viewModel;
-  }
-
-  @override
-  Widget buildView(BuildContext context, StartupViewModel viewModel) {
-    return Scaffold(
-      body: Center(
-        child: _buildContent(viewModel),
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) {
+        final viewModel = $createVm;
+        viewModel.initialize().then((_) {
+          if (viewModel.state == ViewState.success) {
+            onReady();
+          }
+        });
+        return viewModel;
+      },
+      child: Consumer<StartupViewModel>(
+        builder: (context, viewModel, _) {
+          return Scaffold(
+            body: Center(
+              child: _buildContent(viewModel),
+            ),
+          );
+        },
       ),
     );
   }
 
   Widget _buildContent(StartupViewModel viewModel) {
-    switch (viewModel.startupState) {
-      case StartupState.loading:
+    switch (viewModel.state) {
+      case ViewState.initial:
+      case ViewState.loading:
         return const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -125,15 +140,15 @@ class StartupView extends BaseView<StartupViewModel> {
             Text('Initializing...'),
           ],
         );
-      case StartupState.success:
+      case ViewState.success:
         return const Icon(Icons.check_circle, size: 64, color: Colors.green);
-      case StartupState.error:
+      case ViewState.error:
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text(viewModel.startupError ?? 'An error occurred'),
+            Text(viewModel.errorMessage ?? 'An error occurred'),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: viewModel.retry,
