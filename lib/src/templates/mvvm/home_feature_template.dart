@@ -64,32 +64,32 @@ class HomeViewModel extends BaseViewModel {
             "import 'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart';\n";
 
     final createVm = hasLocator
-        ? 'final viewModel = HomeViewModel(locator<GetHomeDataUseCase>());'
-        : '''final useCase = GetHomeDataUseCase(HomeRepositoryImpl());
-    final viewModel = HomeViewModel(useCase);''';
+        ? 'locator<HomeViewModel>()..loadData()'
+        : 'HomeViewModel(GetHomeDataUseCase(HomeRepositoryImpl()))..loadData()';
 
     return '''import 'package:flutter/material.dart';
 
-import 'package:${config.appNameSnakeCase}/core/base/base_view.dart';
+import 'package:provider/provider.dart';
+
 import 'package:${config.appNameSnakeCase}/features/home/viewmodels/home_viewmodel.dart';
 $locatorImport$nonLocatorImports
-class HomeView extends BaseView<HomeViewModel> {
+class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
   @override
-  HomeViewModel createViewModel(BuildContext context) {
-    $createVm
-    viewModel.loadData();
-    return viewModel;
-  }
-
-  @override
-  Widget buildView(BuildContext context, HomeViewModel viewModel) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => $createVm,
+      child: Consumer<HomeViewModel>(
+        builder: (context, viewModel, _) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Home'),
+            ),
+            body: _buildBody(viewModel),
+          );
+        },
       ),
-      body: _buildBody(viewModel),
     );
   }
 

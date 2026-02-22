@@ -37,6 +37,8 @@ Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
   static String generateUnitTestExample(ProjectConfig config) {
     return '''import 'package:flutter_test/flutter_test.dart';
 
+import 'package:${config.appNameSnakeCase}/data/repositories/home_repository.dart';
+import 'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart';
 import 'package:${config.appNameSnakeCase}/features/home/viewmodels/home_viewmodel.dart';
 
 void main() {
@@ -44,7 +46,7 @@ void main() {
     late HomeViewModel viewModel;
 
     setUp(() {
-      viewModel = HomeViewModel();
+      viewModel = HomeViewModel(GetHomeDataUseCase(HomeRepositoryImpl()));
     });
 
     test('initial state is not busy', () {

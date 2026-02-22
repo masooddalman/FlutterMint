@@ -2,7 +2,6 @@ import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/modules/module.dart';
 import 'package:flutterforge/src/templates/mvvm/home_feature_template.dart';
 import 'package:flutterforge/src/templates/mvvm/usecase_template.dart';
-import 'package:flutterforge/src/templates/mvvm/view_template.dart';
 import 'package:flutterforge/src/templates/mvvm/viewmodel_template.dart';
 
 class MvvmModule extends Module {
@@ -30,7 +29,6 @@ class MvvmModule extends Module {
   Map<String, String> generateFiles(ProjectConfig config) => {
         'lib/core/base/base_viewmodel.dart':
             ViewModelTemplate.generate(config),
-        'lib/core/base/base_view.dart': ViewTemplate.generate(config),
         'lib/domain/repositories/home_repository.dart':
             UseCaseTemplate.generateHomeRepositoryInterface(config),
         'lib/data/repositories/home_repository.dart':
@@ -56,12 +54,14 @@ class MvvmModule extends Module {
         'package:${config.appNameSnakeCase}/data/repositories/home_repository.dart',
         'package:${config.appNameSnakeCase}/domain/repositories/home_repository.dart',
         'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart',
+        'package:${config.appNameSnakeCase}/features/home/viewmodels/home_viewmodel.dart',
       ];
 
   @override
   List<String> locatorRegistrations(ProjectConfig config) => [
         'locator.registerLazySingleton<HomeRepository>(() => HomeRepositoryImpl());',
         'locator.registerLazySingleton(() => GetHomeDataUseCase(locator<HomeRepository>()));',
+        'locator.registerFactory(() => HomeViewModel(locator<GetHomeDataUseCase>()));',
       ];
 
   @override

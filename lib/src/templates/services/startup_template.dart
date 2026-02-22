@@ -83,33 +83,46 @@ class StartupViewModel extends BaseViewModel {
   }
 
   static String generateStartupView(ProjectConfig config) {
+    final hasLocator = config.hasModule('locator');
+    final locatorImport = hasLocator
+        ? "import 'package:${config.appNameSnakeCase}/app/locator.dart';\n"
+        : '';
+    final createVm = hasLocator
+        ? 'locator<StartupViewModel>()'
+        : 'StartupViewModel()';
+
     return '''import 'package:flutter/material.dart';
 
-import 'package:${config.appNameSnakeCase}/core/base/base_view.dart';
+import 'package:provider/provider.dart';
+
 import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
 import 'package:${config.appNameSnakeCase}/app/startup/startup_viewmodel.dart';
-
-class StartupView extends BaseView<StartupViewModel> {
+$locatorImport
+class StartupView extends StatelessWidget {
   const StartupView({super.key, required this.onReady});
 
   final VoidCallback onReady;
 
   @override
-  StartupViewModel createViewModel(BuildContext context) {
-    final viewModel = StartupViewModel();
-    viewModel.initialize().then((_) {
-      if (viewModel.startupState == StartupState.success) {
-        onReady();
-      }
-    });
-    return viewModel;
-  }
-
-  @override
-  Widget buildView(BuildContext context, StartupViewModel viewModel) {
-    return Scaffold(
-      body: Center(
-        child: _buildContent(viewModel),
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) {
+        final viewModel = $createVm;
+        viewModel.initialize().then((_) {
+          if (viewModel.startupState == StartupState.success) {
+            onReady();
+          }
+        });
+        return viewModel;
+      },
+      child: Consumer<StartupViewModel>(
+        builder: (context, viewModel, _) {
+          return Scaffold(
+            body: Center(
+              child: _buildContent(viewModel),
+            ),
+          );
+        },
       ),
     );
   }
