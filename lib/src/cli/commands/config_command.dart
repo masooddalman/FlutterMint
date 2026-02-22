@@ -59,11 +59,13 @@ class ConfigCommand extends Command<void> {
       print('');
       final adder = ModuleAdder();
       await adder.add(projectPath, forgeConfig, ['cicd']);
-      // Reload config after adding
       forgeConfig = ForgeConfig.load(projectPath)!;
     }
 
-    // 3. Run wizard
+    // 3. Load existing CI/CD config (for defaults)
+    final existing = forgeConfig.cicdConfig;
+
+    // 4. Run wizard
     PromptUtils.printHeader('CI/CD Configuration Wizard');
 
     final hasTesting = forgeConfig.modules.contains('testing');
@@ -71,36 +73,96 @@ class ConfigCommand extends Command<void> {
     // ANSI color codes
     const green = '\x1B[32m';
     const red = '\x1B[31m';
+    const blue = '\x1B[34m';
+    const dim = '\x1B[2m';
     const reset = '\x1B[0m';
 
-    // Show available CI steps
-    print('  Available CI steps:');
+    // Show current config if exists
+    if (existing != null) {
+      print('  ${dim}Current configuration:$reset');
+      print('    Branches: ${existing.branches.join(", ")}');
+      print('    Format check: ${existing.formatCheck ? "yes" : "no"}');
+      print('    Caching: ${existing.caching ? "yes" : "no"}');
+      if (hasTesting) {
+        print('    Coverage: ${existing.coverage ? "yes" : "no"}');
+      }
+      print('    Concurrency: ${existing.concurrency ? "yes" : "no"}');
+      for (final entry in existing.branchBuilds.entries) {
+        final platLabels = entry.value
+            .map((p) => CicdConfig.platformLabels[p] ?? p)
+            .join(', ');
+        print('    Builds (${entry.key}): $platLabels');
+      }
+      if (existing.firebaseDistribution) {
+        print('    Firebase Distribution: yes (groups: ${existing.firebaseGroups})');
+      }
+      if (existing.googlePlayUpload) {
+        print('    Google Play: yes (${existing.packageName}, ${CicdConfig.trackLabels[existing.googlePlayTrack] ?? existing.googlePlayTrack})');
+      }
+      print('');
+      print('  ${dim}Modify the settings below (press Enter to keep current values).$reset');
+      print('');
+    }
+
+    // Compute default step numbers from existing config
+    final defaultSteps = <int>{};
+    if (existing != null) {
+      if (existing.formatCheck) defaultSteps.add(1);
+      if (existing.caching) defaultSteps.add(2);
+      if (existing.coverage) defaultSteps.add(3);
+      if (existing.concurrency) defaultSteps.add(4);
+      if (existing.branchBuilds.isNotEmpty) defaultSteps.add(5);
+      if (existing.firebaseDistribution) defaultSteps.add(6);
+      if (existing.googlePlayUpload) defaultSteps.add(7);
+    }
+    final defaultStepsStr = defaultSteps.isNotEmpty
+        ? (defaultSteps.toList()..sort()).join(',')
+        : '1,2,4';
+
+    // Helper to mark active steps in blue
+    String stepLabel(int n, String label) {
+      final active = defaultSteps.contains(n);
+      return active ? '$blue  $n. $label$reset' : '  $n. $label';
+    }
+
+    // Show available CI/CD steps
+    print('  Available CI/CD steps:');
     print('');
-    print('  1. Format Check');
+    print(stepLabel(1, 'Format Check'));
     print('  $green   Runs "dart format --set-exit-if-changed ." to enforce code style$reset');
     print('');
-    print('  2. Caching');
+    print(stepLabel(2, 'Caching'));
     print('  $green   Caches Flutter SDK & pub dependencies for faster builds$reset');
     print('');
     if (hasTesting) {
-      print('  3. Code Coverage');
+      print(stepLabel(3, 'Code Coverage'));
       print('  $green   Uploads test coverage report to Codecov after running tests$reset');
     } else {
       print('  ${red}X$reset 3. Code Coverage');
       print('  $red   (Requires testing module — run "flutterforge add testing" first)$reset');
     }
     print('');
-    print('  4. Concurrency Control');
+    print(stepLabel(4, 'Concurrency Control'));
     print('  $green   Cancels in-progress CI runs when new commits are pushed$reset');
     print('');
-    print('  5. Build Platforms');
+    print(stepLabel(5, 'Build Platforms'));
     print('  $green   Choose which platforms to build (APK, AAB, Web, iOS)$reset');
+    print('');
+    print(stepLabel(6, 'Firebase App Distribution'));
+    print('  $green   Upload APK/AAB to Firebase for testers (push only)$reset');
+    print('');
+    print(stepLabel(7, 'Google Play Upload'));
+    print('  $green   Upload AAB to Google Play Store (push only)$reset');
     print('');
 
     // Ask user to select steps
+    if (defaultSteps.isNotEmpty) {
+      print('  ${dim}Omit a number to remove it from the config.$reset');
+      print('');
+    }
     final stepsInput = PromptUtils.askText(
-      'Enter step numbers to enable (comma-separated, e.g. 1,2,4)',
-      defaultValue: '1,2,4',
+      'Enter step numbers to enable (comma-separated)',
+      defaultValue: defaultStepsStr,
     );
 
     final selectedSteps = stepsInput
@@ -121,11 +183,14 @@ class ConfigCommand extends Command<void> {
     }
 
     // Branches
+    final existingExtra = existing != null
+        ? existing.branches.where((b) => b != 'main').join(', ')
+        : '';
     print('');
     print('  CI runs on push/PR to: main (default)');
     final branchInput = PromptUtils.askText(
       '  Additional branches (comma-separated, or press Enter to skip)',
-      defaultValue: '',
+      defaultValue: existingExtra,
     );
     final branches = ['main'];
     if (branchInput.isNotEmpty) {
@@ -144,7 +209,6 @@ class ConfigCommand extends Command<void> {
       final platformKeys = CicdConfig.platformLabels.keys.toList();
 
       if (branches.length > 1) {
-        // Multiple branches — offer per-branch config
         print('  ${green}Multiple branches detected — you can configure builds per branch.$reset');
         print('');
       }
@@ -157,13 +221,19 @@ class ConfigCommand extends Command<void> {
       print('');
 
       if (branches.length == 1) {
-        // Single branch — global platforms
-        final platforms = _askPlatforms(platformKeys, branches.first);
+        final platforms = _askPlatforms(
+          platformKeys,
+          branches.first,
+          existingPlatforms: existing?.platformsForBranch(branches.first),
+        );
         branchBuilds[branches.first] = platforms;
       } else {
-        // Per-branch
         for (final branch in branches) {
-          final platforms = _askPlatforms(platformKeys, branch);
+          final platforms = _askPlatforms(
+            platformKeys,
+            branch,
+            existingPlatforms: existing?.platformsForBranch(branch),
+          );
           branchBuilds[branch] = platforms;
         }
       }
@@ -171,6 +241,67 @@ class ConfigCommand extends Command<void> {
       // No build platforms step selected — default APK for all
       for (final branch in branches) {
         branchBuilds[branch] = ['apk'];
+      }
+    }
+
+    // Validate deployment steps against selected platforms
+    final allSelectedPlatforms =
+        branchBuilds.values.expand((p) => p).toSet();
+    final hasAnyApkOrAab =
+        allSelectedPlatforms.contains('apk') ||
+        allSelectedPlatforms.contains('aab');
+    final hasAnyAab = allSelectedPlatforms.contains('aab');
+
+    final firebaseDistribution = selectedSteps.contains(6) && hasAnyApkOrAab;
+    if (selectedSteps.contains(6) && !hasAnyApkOrAab) {
+      print('');
+      print('  ${red}Skipping Firebase App Distribution — no APK or AAB builds configured.$reset');
+    }
+
+    final googlePlayUpload = selectedSteps.contains(7) && hasAnyAab;
+    if (selectedSteps.contains(7) && !hasAnyAab) {
+      print('');
+      print('  ${red}Skipping Google Play Upload — AAB build is required but not configured.$reset');
+    }
+
+    // Collect deployment parameters
+    var firebaseGroups = existing?.firebaseGroups ?? 'testers';
+    var packageName = existing?.packageName ?? 'com.example.${forgeConfig.appName}';
+    var googlePlayTrack = existing?.googlePlayTrack ?? 'internal';
+
+    if (firebaseDistribution) {
+      print('');
+      print('  Firebase App Distribution setup:');
+      firebaseGroups = PromptUtils.askText(
+        '  Tester group names (comma-separated)',
+        defaultValue: firebaseGroups,
+      );
+    }
+
+    if (googlePlayUpload) {
+      print('');
+      print('  Google Play Store setup:');
+      packageName = PromptUtils.askText(
+        '  Package name',
+        defaultValue: packageName,
+      );
+
+      final trackKeys = CicdConfig.trackLabels.keys.toList();
+      print('');
+      print('  Release track:');
+      for (var i = 0; i < trackKeys.length; i++) {
+        print('    ${i + 1}. ${CicdConfig.trackLabels[trackKeys[i]]}');
+      }
+      final existingTrackIdx = trackKeys.indexOf(googlePlayTrack);
+      final defaultTrackStr =
+          existingTrackIdx >= 0 ? '${existingTrackIdx + 1}' : '1';
+      final trackInput = PromptUtils.askText(
+        '  Select track number',
+        defaultValue: defaultTrackStr,
+      );
+      final trackIdx = int.tryParse(trackInput.trim());
+      if (trackIdx != null && trackIdx >= 1 && trackIdx <= trackKeys.length) {
+        googlePlayTrack = trackKeys[trackIdx - 1];
       }
     }
 
@@ -190,6 +321,15 @@ class ConfigCommand extends Command<void> {
           .join(', ');
       print('    Builds (${entry.key}): $platLabels');
     }
+    if (firebaseDistribution) {
+      print('    Firebase Distribution: ${green}yes$reset (groups: $firebaseGroups)');
+    }
+    if (googlePlayUpload) {
+      print('    Google Play Upload: ${green}yes$reset ($packageName, ${CicdConfig.trackLabels[googlePlayTrack] ?? googlePlayTrack})');
+    }
+    if (firebaseDistribution || googlePlayUpload) {
+      print('    ${dim}Deployment: push events only (not PRs)$reset');
+    }
     print('');
 
     final confirm = PromptUtils.askYesNo('Proceed?', defaultValue: true);
@@ -205,13 +345,18 @@ class ConfigCommand extends Command<void> {
       coverage: coverage,
       concurrency: concurrency,
       branchBuilds: branchBuilds,
+      firebaseDistribution: firebaseDistribution,
+      googlePlayUpload: googlePlayUpload,
+      googlePlayTrack: googlePlayTrack,
+      packageName: packageName,
+      firebaseGroups: firebaseGroups,
     );
 
-    // 4. Save config
+    // 5. Save config
     final updatedConfig = forgeConfig.withCicdConfig(cicdConfig);
     await updatedConfig.save(projectPath);
 
-    // 5. Regenerate ci.yml
+    // 6. Regenerate ci.yml
     final projectConfig = ProjectConfig(
       appName: forgeConfig.appName,
       selectedModules: forgeConfig.modules.toList(),
@@ -231,12 +376,45 @@ class ConfigCommand extends Command<void> {
     print('CI/CD configuration saved!');
     print('  Updated: .flutterforge.yaml');
     print('  Updated: .github/workflows/ci.yml');
+
+    // 7. Print secrets guidance
+    if (firebaseDistribution || googlePlayUpload) {
+      print('');
+      print('  ${green}Required GitHub Secrets:$reset');
+      print('  ─────────────────────────────────');
+      if (firebaseDistribution) {
+        print('  FIREBASE_APP_ID');
+        print('    ${dim}Your Firebase App ID (e.g. 1:123456789:android:abcdef)$reset');
+        print('    ${dim}Firebase Console > Project Settings > Your apps$reset');
+        print('  FIREBASE_SERVICE_ACCOUNT');
+        print('    ${dim}Firebase service account JSON content$reset');
+        print('    ${dim}Firebase Console > Project Settings > Service Accounts$reset');
+      }
+      if (googlePlayUpload) {
+        print('  GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
+        print('    ${dim}Google Play service account JSON content$reset');
+        print('    ${dim}Google Play Console > Setup > API Access$reset');
+      }
+      print('');
+      print('  Set secrets at: https://github.com/<owner>/<repo>/settings/secrets/actions');
+    }
   }
 
-  List<String> _askPlatforms(List<String> platformKeys, String branch) {
+  List<String> _askPlatforms(
+    List<String> platformKeys,
+    String branch, {
+    List<String>? existingPlatforms,
+  }) {
+    // Compute default from existing platforms
+    final defaultStr = existingPlatforms != null
+        ? existingPlatforms
+              .map((p) => platformKeys.indexOf(p) + 1)
+              .where((i) => i > 0)
+              .join(',')
+        : '1';
     final input = PromptUtils.askText(
       '  Platforms for "$branch"',
-      defaultValue: '1',
+      defaultValue: defaultStr.isNotEmpty ? defaultStr : '1',
     );
     final parsed = input
         .split(',')

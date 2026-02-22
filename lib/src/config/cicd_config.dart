@@ -8,6 +8,11 @@ class CicdConfig {
     this.coverage = false,
     this.concurrency = true,
     this.branchBuilds = const {},
+    this.firebaseDistribution = false,
+    this.googlePlayUpload = false,
+    this.googlePlayTrack = 'internal',
+    this.packageName = '',
+    this.firebaseGroups = 'testers',
   });
 
   final List<String> branches;
@@ -20,6 +25,13 @@ class CicdConfig {
   /// Empty map = global default (['apk'] for all branches).
   /// e.g. {'main': ['aab'], 'develop': ['apk']}
   final Map<String, List<String>> branchBuilds;
+
+  // Deployment
+  final bool firebaseDistribution;
+  final bool googlePlayUpload;
+  final String googlePlayTrack;
+  final String packageName;
+  final String firebaseGroups;
 
   /// Get platforms for a specific branch.
   List<String> platformsForBranch(String branch) {
@@ -37,6 +49,9 @@ class CicdConfig {
     );
   }
 
+  /// True if any deployment is configured.
+  bool get hasDeployment => firebaseDistribution || googlePlayUpload;
+
   /// All unique platforms across all branches (for global mode or fallback).
   List<String> get allPlatforms {
     if (branchBuilds.isEmpty) return const ['apk'];
@@ -53,6 +68,8 @@ class CicdConfig {
     caching: false,
     coverage: false,
     concurrency: false,
+    firebaseDistribution: false,
+    googlePlayUpload: false,
   );
 
   static CicdConfig? fromYaml(YamlMap? yaml) {
@@ -83,6 +100,24 @@ class CicdConfig {
       }
     }
 
+    // Parse deployment config
+    final deployYaml = yaml['deployment'];
+    var firebaseDistribution = false;
+    var googlePlayUpload = false;
+    var googlePlayTrack = 'internal';
+    var packageName = '';
+    var firebaseGroups = 'testers';
+
+    if (deployYaml is YamlMap) {
+      firebaseDistribution =
+          deployYaml['firebase_distribution'] as bool? ?? false;
+      googlePlayUpload = deployYaml['google_play_upload'] as bool? ?? false;
+      googlePlayTrack =
+          deployYaml['google_play_track'] as String? ?? 'internal';
+      packageName = deployYaml['package_name'] as String? ?? '';
+      firebaseGroups = deployYaml['firebase_groups'] as String? ?? 'testers';
+    }
+
     return CicdConfig(
       branches: branchesList?.cast<String>().toList() ?? const ['main'],
       formatCheck: yaml['format_check'] as bool? ?? true,
@@ -90,6 +125,11 @@ class CicdConfig {
       coverage: yaml['coverage'] as bool? ?? false,
       concurrency: yaml['concurrency'] as bool? ?? true,
       branchBuilds: branchBuilds,
+      firebaseDistribution: firebaseDistribution,
+      googlePlayUpload: googlePlayUpload,
+      googlePlayTrack: googlePlayTrack,
+      packageName: packageName,
+      firebaseGroups: firebaseGroups,
     );
   }
 
@@ -113,6 +153,16 @@ class CicdConfig {
         }
       }
     }
+    if (hasDeployment) {
+      lines.add('  deployment:');
+      lines.add('    firebase_distribution: $firebaseDistribution');
+      lines.add('    firebase_groups: $firebaseGroups');
+      lines.add('    google_play_upload: $googlePlayUpload');
+      if (googlePlayUpload) {
+        lines.add('    google_play_track: $googlePlayTrack');
+        lines.add('    package_name: $packageName');
+      }
+    }
     return lines;
   }
 
@@ -121,5 +171,12 @@ class CicdConfig {
     'aab': 'Android App Bundle (release)',
     'web': 'Web',
     'ios': 'iOS',
+  };
+
+  static const Map<String, String> trackLabels = {
+    'internal': 'Internal testing',
+    'alpha': 'Closed testing (alpha)',
+    'beta': 'Open testing (beta)',
+    'production': 'Production',
   };
 }
