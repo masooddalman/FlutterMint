@@ -17,6 +17,13 @@ class ProjectGenerator {
   Future<void> generate(ProjectConfig config) async {
     final projectPath = p.join(Directory.current.path, config.appName);
 
+    // Pre-flight check: is Flutter available?
+    if (!await _isFlutterAvailable()) {
+      stderr.writeln('Error: Flutter SDK not found on PATH.');
+      stderr.writeln('Install Flutter: https://docs.flutter.dev/get-started/install');
+      return;
+    }
+
     // Check if directory already exists
     if (await Directory(projectPath).exists()) {
       stderr.writeln(
@@ -25,8 +32,10 @@ class ProjectGenerator {
       return;
     }
 
+    final stopwatch = Stopwatch()..start();
+
     // Step 1: Run flutter create
-    print('Running flutter create ${config.appName}...');
+    _printStep(1, 'Creating Flutter project...');
     await _runFlutterCreate(config.appName);
 
     // Step 2: Resolve and order selected modules
@@ -36,36 +45,62 @@ class ProjectGenerator {
     await _cleanDefaults(projectPath);
 
     // Step 4: Add dependencies to pubspec.yaml
-    print('Configuring dependencies...');
+    _printStep(2, 'Configuring dependencies...');
     await _pubspecEditor.addDependencies(projectPath, modules);
 
     // Step 5: Generate module-specific files
-    print('Generating project structure...');
+    _printStep(3, 'Generating project structure...');
     await _generateModuleFiles(projectPath, config, modules);
 
     // Step 6: Compose shared files (main.dart, app.dart, locator.dart)
-    print('Composing application files...');
+    _printStep(4, 'Composing application files...');
     await _composer.compose(projectPath, config, modules);
 
     // Step 7: Generate analysis_options.yaml
     await _generateAnalysisOptions(projectPath);
 
     // Step 8: Run flutter pub get
-    print('Resolving dependencies...');
+    _printStep(5, 'Resolving dependencies...');
     await _runPubGet(projectPath);
 
     // Step 9: Generate localization files if needed
     if (config.hasModule('localization')) {
-      print('Generating localization files...');
+      _printStep(6, 'Generating localization files...');
       await _runGenL10n(projectPath);
     }
 
+    stopwatch.stop();
+    final seconds = (stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1);
+
     print('');
-    print('Project "${config.appName}" created successfully!');
+    print('=== Project "${config.appName}" created successfully! ($seconds s) ===');
+    print('');
+    print('Modules included:');
+    for (final module in modules) {
+      print('  + ${module.displayName}');
+    }
     print('');
     print('Next steps:');
     print('  cd ${config.appName}');
     print('  flutter run');
+    print('');
+  }
+
+  static void _printStep(int step, String message) {
+    print('  [$step] $message');
+  }
+
+  Future<bool> _isFlutterAvailable() async {
+    try {
+      final result = await Process.run(
+        'flutter',
+        ['--version'],
+        runInShell: true,
+      );
+      return result.exitCode == 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _runFlutterCreate(String appName) async {
@@ -106,12 +141,6 @@ class ProjectGenerator {
 
   Future<void> _generateAnalysisOptions(String projectPath) async {
     const content = '''include: package:flutter_lints/flutter.yaml
-
-linter:
-  rules:
-    prefer_single_quotes: true
-    sort_constructors_first: true
-    prefer_final_locals: true
 ''';
     await _fileWriter.write(
       p.join(projectPath, 'analysis_options.yaml'),

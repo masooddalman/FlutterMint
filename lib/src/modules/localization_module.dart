@@ -17,7 +17,7 @@ class LocalizationModule extends Module {
 
   @override
   Map<String, String> get dependencies => {
-        'intl': '^0.19.0',
+        'intl': '^0.20.2',
       };
 
   @override

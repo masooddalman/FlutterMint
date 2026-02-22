@@ -54,7 +54,10 @@ class MvvmModule extends Module {
   List<String> providerDeclarations(ProjectConfig config) => [];
 
   @override
-  List<String> appImports(ProjectConfig config) => [
-        'package:${config.appNameSnakeCase}/features/home/views/home_view.dart',
-      ];
+  List<String> appImports(ProjectConfig config) =>
+      config.hasModule('routing')
+          ? []
+          : [
+              'package:${config.appNameSnakeCase}/features/home/views/home_view.dart',
+            ];
 }

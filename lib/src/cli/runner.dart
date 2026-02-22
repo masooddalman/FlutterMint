@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:args/command_runner.dart';
 
 import 'package:flutterforge/src/cli/commands/create_command.dart';
@@ -20,14 +22,20 @@ class FlutterForgeRunner extends CommandRunner<void> {
     try {
       final results = parse(args);
       if (results['version'] == true) {
-        print('${Constants.toolName} version ${Constants.version}');
+        print('FlutterForge v${Constants.version}');
         return;
       }
       await super.run(args);
     } on UsageException catch (e) {
-      print(e.message);
+      stderr.writeln(e.message);
       print('');
       print(e.usage);
+    } on ProcessException catch (e) {
+      stderr.writeln('Process error: ${e.message}');
+      exit(1);
+    } catch (e) {
+      stderr.writeln('Error: $e');
+      exit(1);
     }
   }
 }
