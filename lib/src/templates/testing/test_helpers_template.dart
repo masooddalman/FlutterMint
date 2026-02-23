@@ -20,10 +20,7 @@ class MockGetHomeDataUseCase extends Mock implements GetHomeDataUseCase {}
 
 // --- Test data ---
 
-const testHomeModel = HomeModel(
-  title: 'Test Title',
-  description: 'Test Description',
-);
+const testHomeModel = HomeModel();
 
 // --- Widget helpers ---
 
@@ -76,7 +73,7 @@ void main() {
     test('initial state is initial', () {
       expect(viewModel.state, ViewState.initial);
       expect(viewModel.isBusy, isFalse);
-      expect(viewModel.homeData, isNull);
+      expect(viewModel.data, isNull);
     });
 
     test('initial state has no error', () {
@@ -92,8 +89,7 @@ void main() {
       await viewModel.loadData();
 
       expect(viewModel.state, ViewState.success);
-      expect(viewModel.homeData, testHomeModel);
-      expect(viewModel.homeData!.title, 'Test Title');
+      expect(viewModel.data, testHomeModel);
       expect(viewModel.isBusy, isFalse);
     });
 
@@ -107,7 +103,7 @@ void main() {
       expect(viewModel.state, ViewState.error);
       expect(viewModel.hasError, isTrue);
       expect(viewModel.errorMessage, contains('Network error'));
-      expect(viewModel.homeData, isNull);
+      expect(viewModel.data, isNull);
     });
   });
 }
@@ -175,8 +171,7 @@ void main() {
       await viewModel.loadData();
       await tester.pumpWidget(createHomeTestWidget(viewModel));
 
-      expect(find.text('Test Title'), findsOneWidget);
-      expect(find.text('Test Description'), findsOneWidget);
+      expect(find.text('Home screen'), findsOneWidget);
     });
 
     testWidgets('shows error message on failure', (tester) async {
@@ -211,16 +206,8 @@ class _HomeBody extends StatelessWidget {
           ),
         );
       case ViewState.success:
-        final data = viewModel.homeData;
-        if (data == null) return const Center(child: Text('No data'));
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(data.title),
-              Text(data.description),
-            ],
-          ),
+        return const Center(
+          child: Text('Home screen'),
         );
     }
   }

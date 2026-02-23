@@ -1,7 +1,6 @@
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/templates/mvvm/home_feature_template.dart';
-import 'package:flutterforge/src/templates/mvvm/usecase_template.dart';
+import 'package:flutterforge/src/templates/mvvm/screen_template.dart';
 import 'package:flutterforge/src/templates/mvvm/viewmodel_template.dart';
 
 class MvvmModule extends Module {
@@ -25,22 +24,26 @@ class MvvmModule extends Module {
   @override
   Map<String, String> get devDependencies => {};
 
+  static const _home = 'home';
+
   @override
   Map<String, String> generateFiles(ProjectConfig config) => {
         'lib/core/base/base_viewmodel.dart':
             ViewModelTemplate.generate(config),
         'lib/domain/repositories/home_repository.dart':
-            UseCaseTemplate.generateHomeRepositoryInterface(config),
+            ScreenTemplate.generateRepository(_home, config),
         'lib/data/repositories/home_repository.dart':
-            UseCaseTemplate.generateHomeRepositoryImpl(config),
+            ScreenTemplate.generateRepositoryImpl(_home, config),
         'lib/domain/usecases/get_home_data_usecase.dart':
-            UseCaseTemplate.generateGetHomeDataUseCase(config),
+            ScreenTemplate.generateUseCase(_home, config),
         'lib/features/home/models/home_model.dart':
-            HomeFeatureTemplate.generateModel(config),
+            ScreenTemplate.generateModel(_home, config),
         'lib/features/home/viewmodels/home_viewmodel.dart':
-            HomeFeatureTemplate.generateViewModel(config),
+            ScreenTemplate.generateViewModel(_home, config),
         'lib/features/home/views/home_view.dart':
-            HomeFeatureTemplate.generateView(config),
+            ScreenTemplate.generateView(_home, config),
+        'lib/features/common/widgets/shared_widgets.dart':
+            ScreenTemplate.generateSharedWidgetsPlaceholder(),
       };
 
   @override

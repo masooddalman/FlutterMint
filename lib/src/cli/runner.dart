@@ -6,6 +6,7 @@ import 'package:flutterforge/src/cli/commands/add_command.dart';
 import 'package:flutterforge/src/cli/commands/config_command.dart';
 import 'package:flutterforge/src/cli/commands/create_command.dart';
 import 'package:flutterforge/src/cli/commands/remove_command.dart';
+import 'package:flutterforge/src/cli/commands/screen_command.dart';
 import 'package:flutterforge/src/cli/commands/status_command.dart';
 import 'package:flutterforge/src/config/constants.dart';
 
@@ -17,6 +18,7 @@ class FlutterForgeRunner extends CommandRunner<void> {
     addCommand(RemoveCommand());
     addCommand(ConfigCommand());
     addCommand(StatusCommand());
+    addCommand(ScreenCommand());
     argParser.addFlag(
       'version',
       abbr: 'v',

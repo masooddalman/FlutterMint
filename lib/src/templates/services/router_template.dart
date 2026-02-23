@@ -5,19 +5,22 @@ class RouterTemplate {
 
   static String generate(ProjectConfig config) {
     final hasStartup = config.hasModule('startup');
-    final initialLocation = hasStartup ? '/startup' : '/';
 
     final startupImport = hasStartup
         ? "import 'package:${config.appNameSnakeCase}/app/startup/startup_view.dart';\n"
         : '';
 
+    final startupPath = hasStartup
+        ? "  static const startup = '/startup';\n"
+        : '';
+
     final startupRoute = hasStartup
         ? '''
       GoRoute(
-        path: '/startup',
+        path: RoutePaths.startup,
         name: 'startup',
         builder: (context, state) => StartupView(
-          onReady: () => router.go('/'),
+          onReady: () => router.go(RoutePaths.home),
         ),
       ),'''
         : '';
@@ -27,14 +30,21 @@ import 'package:go_router/go_router.dart';
 
 import 'package:${config.appNameSnakeCase}/features/home/views/home_view.dart';
 $startupImport
+class RoutePaths {
+  RoutePaths._();
+
+  static const home = '/';
+$startupPath  // Add more paths here
+}
+
 class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
-    initialLocation: '$initialLocation',
+    initialLocation: RoutePaths.${hasStartup ? 'startup' : 'home'},
     routes: [$startupRoute
       GoRoute(
-        path: '/',
+        path: RoutePaths.home,
         name: 'home',
         builder: (context, state) => const HomeView(),
       ),

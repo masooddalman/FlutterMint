@@ -18,6 +18,7 @@ Beyond initial scaffolding, FlutterForge manages the project lifecycle. You can 
 
 - **Interactive wizard** — guided project setup with module selection and organization/package name configuration
 - **12 modules** — MVVM, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, and CI/CD
+- **Screen generator** — `flutterforge screen <name>` scaffolds a complete MVVM screen with auto-injection into locator and router, optional route parameters, and test generation
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
 - **Clean architecture** — domain/data/feature layers with repositories, use cases, and view models
@@ -74,6 +75,25 @@ flutterforge status
 
 Adding or removing a module automatically updates `pubspec.yaml` and recomposes `main.dart`, `app.dart`, and `locator.dart`.
 
+### Add a screen
+
+```bash
+# Generate a full MVVM screen (model, repository, usecase, viewmodel, view, tests)
+flutterforge screen profile
+
+# With route parameters
+flutterforge screen profile --param id:String
+
+# Multiple parameters (short form)
+flutterforge screen product -p id:String -p category:String
+```
+
+This generates the complete feature stack and automatically:
+- Injects dependencies into `locator.dart` (repository, usecase, viewmodel)
+- Adds a `RoutePaths` constant and `GoRoute` to `app_router.dart`
+- Creates unit and widget tests (if testing module is installed)
+- Creates a screen-specific `widgets/` folder
+
 ### Configure CI/CD
 
 ```bash
@@ -96,7 +116,7 @@ Opens an interactive wizard to configure:
 | **logging** | Yes | Leveled `LoggerService` with info/warning/error methods | — |
 | **locator** | No | GetIt service locator with auto-registration for all modules | `get_it ^8.0.0` |
 | **theming** | No | Light/dark Material 3 themes with `ThemeProvider` toggle | — |
-| **routing** | No | GoRouter configuration with `MaterialApp.router` integration | `go_router ^14.0.0` |
+| **routing** | No | GoRouter with `RoutePaths` constants and `MaterialApp.router` integration | `go_router ^14.0.0` |
 | **api** | No | Dio HTTP client with interceptors and exception handling | `dio ^5.4.0` |
 | **ai** | No | Generic AI service template for LLM/ML integration | — |
 | **localization** | No | ARB-based localization with English and Arabic starter files | `intl ^0.20.2` |
@@ -121,7 +141,7 @@ my_app/
 │   │   ├── api/                              # Dio client + interceptors
 │   │   ├── ai/                               # AI service template
 │   │   ├── localization/arb/                 # ARB translation files
-│   │   ├── routing/app_router.dart           # GoRouter config
+│   │   ├── routing/app_router.dart           # GoRouter config + RoutePaths
 │   │   ├── services/
 │   │   │   ├── logger_service.dart           # Logging
 │   │   │   └── toast_service.dart            # Toast notifications
@@ -133,10 +153,12 @@ my_app/
 │   │   ├── repositories/                     # Repository interfaces
 │   │   └── usecases/                         # Business logic
 │   ├── features/
+│   │   ├── common/widgets/                     # Shared widgets across screens
 │   │   └── home/
 │   │       ├── models/home_model.dart
 │   │       ├── viewmodels/home_viewmodel.dart
-│   │       └── views/home_view.dart
+│   │       ├── views/home_view.dart
+│   │       └── widgets/                        # Screen-specific widgets
 │   └── main.dart
 ├── test/
 │   ├── features/home/                        # Example tests
@@ -234,6 +256,15 @@ cicd:
 5. **Shared file composition** — `main.dart`, `app.dart`, and `locator.dart` are composed by collecting imports, setup lines, provider declarations, and service registrations from all active modules
 6. **`flutter pub get`** — resolves the dependency tree
 7. **Config persistence** — `.flutterforge.yaml` records the project state
+
+### How Screen Generation Works
+
+1. **Feature files** — model, repository (interface + impl), usecase, viewmodel, and view are generated under `lib/features/<name>/` and `lib/domain/`/`lib/data/`
+2. **Locator injection** — imports and registrations are inserted into the existing `locator.dart` without rewriting it
+3. **Router injection** — a `RoutePaths` constant and `GoRoute` are inserted into `app_router.dart` using marker comments
+4. **Route parameters** — `--param id:String` generates parameterized routes (`/profile/:id`) with `state.pathParameters` extraction in the builder
+5. **Test generation** — unit and widget tests are generated when the testing module is installed
+6. **Widgets folder** — a screen-specific `widgets/` directory is created for local components
 
 ### CLI Dependencies
 
