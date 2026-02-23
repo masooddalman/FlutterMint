@@ -38,6 +38,7 @@ class ScreenGenerator {
           ScreenTemplate.generateRepositoryImpl(screenName, config),
       'lib/domain/usecases/get_${screenName}_data_usecase.dart':
           ScreenTemplate.generateUseCase(screenName, config),
+      'lib/features/$screenName/widgets/.gitkeep': '',
     };
 
     var filesCreated = 0;
@@ -74,6 +75,7 @@ class ScreenGenerator {
     print('  + features/$screenName/models/${screenName}_model.dart');
     print('  + features/$screenName/viewmodels/${screenName}_viewmodel.dart');
     print('  + features/$screenName/views/${screenName}_view.dart');
+    print('  + features/$screenName/widgets/');
     print('  + domain/repositories/${screenName}_repository.dart');
     print('  + data/repositories/${screenName}_repository.dart');
     print('  + domain/usecases/get_${screenName}_data_usecase.dart');

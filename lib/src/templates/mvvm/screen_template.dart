@@ -163,6 +163,12 @@ class ${pascal}View extends StatelessWidget {
 ''';
   }
 
+  static String generateSharedWidgetsPlaceholder() {
+    return '''// Shared widgets go here.
+// Place reusable widgets that are used across multiple screens in this folder.
+''';
+  }
+
   static String _toTitleCase(String input) {
     return input
         .replaceAll(RegExp(r'[-_]+'), ' ')

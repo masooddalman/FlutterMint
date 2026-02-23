@@ -42,6 +42,8 @@ class MvvmModule extends Module {
             ScreenTemplate.generateViewModel(_home, config),
         'lib/features/home/views/home_view.dart':
             ScreenTemplate.generateView(_home, config),
+        'lib/features/common/widgets/shared_widgets.dart':
+            ScreenTemplate.generateSharedWidgetsPlaceholder(),
       };
 
   @override
