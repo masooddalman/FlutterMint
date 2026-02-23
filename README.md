@@ -3,7 +3,7 @@
 > A CLI tool that generates production-ready Flutter projects with pre-configured architecture, modules, and CI/CD pipelines.
 
 <p align="center">
-  <img src="assets/banner.png" alt="FlutterForge Banner" width="100%" />
+  <img src="assets/banner.png" alt="FlutterForge Banner" width=""400" />
 </p>
 
 ## What is FlutterForge?
