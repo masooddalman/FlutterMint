@@ -69,6 +69,28 @@ class ScreenGenerator {
       _printStep(3, 'Skipping router (module not installed)');
     }
 
+    // Step 4: Generate tests
+    if (forgeConfig.modules.contains('testing')) {
+      _printStep(4, 'Generating tests...');
+      final testFiles = {
+        'test/features/$screenName/${screenName}_viewmodel_test.dart':
+            ScreenTemplate.generateUnitTest(screenName, config),
+        'test/features/$screenName/${screenName}_view_test.dart':
+            ScreenTemplate.generateWidgetTest(screenName, config),
+      };
+      for (final entry in testFiles.entries) {
+        final filePath = p.join(projectPath, entry.key);
+        if (await File(filePath).exists()) {
+          print('    Skipping ${entry.key} (already exists)');
+          continue;
+        }
+        await _fileWriter.write(filePath, entry.value);
+        filesCreated++;
+      }
+    } else {
+      _printStep(4, 'Skipping tests (module not installed)');
+    }
+
     print('');
     print('=== Screen "$screenName" created ($filesCreated files) ===');
     print('');
@@ -80,6 +102,10 @@ class ScreenGenerator {
     print('  + domain/repositories/${screenName}_repository.dart');
     print('  + data/repositories/${screenName}_repository.dart');
     print('  + domain/usecases/get_${screenName}_data_usecase.dart');
+    if (forgeConfig.modules.contains('testing')) {
+      print('  + test/features/$screenName/${screenName}_viewmodel_test.dart');
+      print('  + test/features/$screenName/${screenName}_view_test.dart');
+    }
     if (forgeConfig.modules.contains('locator')) {
       print('  ~ app/locator.dart (updated)');
     }

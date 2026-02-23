@@ -181,6 +181,178 @@ $fieldsBlock
 ''';
   }
 
+  static String generateUnitTest(String name, ProjectConfig config) {
+    final pascal = ProjectConfig.toPascalCase(name);
+    final pkg = config.appNameSnakeCase;
+
+    return '''import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:$pkg/core/base/base_viewmodel.dart';
+import 'package:$pkg/domain/repositories/${name}_repository.dart';
+import 'package:$pkg/domain/usecases/get_${name}_data_usecase.dart';
+import 'package:$pkg/features/$name/models/${name}_model.dart';
+import 'package:$pkg/features/$name/viewmodels/${name}_viewmodel.dart';
+
+class Mock${pascal}Repository extends Mock implements ${pascal}Repository {}
+
+class MockGet${pascal}DataUseCase extends Mock implements Get${pascal}DataUseCase {}
+
+void main() {
+  late MockGet${pascal}DataUseCase mockUseCase;
+  late ${pascal}ViewModel viewModel;
+
+  setUp(() {
+    mockUseCase = MockGet${pascal}DataUseCase();
+    viewModel = ${pascal}ViewModel(mockUseCase);
+  });
+
+  group('${pascal}ViewModel', () {
+    test('initial state is initial', () {
+      expect(viewModel.state, ViewState.initial);
+      expect(viewModel.isBusy, isFalse);
+      expect(viewModel.data, isNull);
+    });
+
+    test('initial state has no error', () {
+      expect(viewModel.errorMessage, isNull);
+      expect(viewModel.hasError, isFalse);
+    });
+
+    test('loadData sets success state with data', () async {
+      when(() => mockUseCase()).thenAnswer(
+        (_) async => const ${pascal}Model(),
+      );
+
+      await viewModel.loadData();
+
+      expect(viewModel.state, ViewState.success);
+      expect(viewModel.data, isNotNull);
+      expect(viewModel.isBusy, isFalse);
+    });
+
+    test('loadData sets error state on failure', () async {
+      when(() => mockUseCase()).thenThrow(
+        Exception('Network error'),
+      );
+
+      await viewModel.loadData();
+
+      expect(viewModel.state, ViewState.error);
+      expect(viewModel.hasError, isTrue);
+      expect(viewModel.errorMessage, contains('Network error'));
+      expect(viewModel.data, isNull);
+    });
+  });
+}
+''';
+  }
+
+  static String generateWidgetTest(String name, ProjectConfig config) {
+    final pascal = ProjectConfig.toPascalCase(name);
+    final pkg = config.appNameSnakeCase;
+    final title = _toTitleCase(name);
+
+    return '''import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
+
+import 'package:$pkg/core/base/base_viewmodel.dart';
+import 'package:$pkg/domain/usecases/get_${name}_data_usecase.dart';
+import 'package:$pkg/features/$name/models/${name}_model.dart';
+import 'package:$pkg/features/$name/viewmodels/${name}_viewmodel.dart';
+
+class MockGet${pascal}DataUseCase extends Mock implements Get${pascal}DataUseCase {}
+
+Widget _createTestWidget(${pascal}ViewModel viewModel) {
+  return MaterialApp(
+    home: ChangeNotifierProvider<${pascal}ViewModel>.value(
+      value: viewModel,
+      child: Consumer<${pascal}ViewModel>(
+        builder: (context, vm, _) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('$title')),
+            body: _${pascal}Body(),
+          );
+        },
+      ),
+    ),
+  );
+}
+
+void main() {
+  late MockGet${pascal}DataUseCase mockUseCase;
+  late ${pascal}ViewModel viewModel;
+
+  setUp(() {
+    mockUseCase = MockGet${pascal}DataUseCase();
+    viewModel = ${pascal}ViewModel(mockUseCase);
+  });
+
+  group('${pascal}View', () {
+    testWidgets('shows loading indicator when loading', (tester) async {
+      when(() => mockUseCase()).thenAnswer(
+        (_) => Completer<${pascal}Model>().future,
+      );
+
+      viewModel.loadData();
+      await tester.pumpWidget(_createTestWidget(viewModel));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows content on success', (tester) async {
+      when(() => mockUseCase()).thenAnswer(
+        (_) async => const ${pascal}Model(),
+      );
+
+      await viewModel.loadData();
+      await tester.pumpWidget(_createTestWidget(viewModel));
+
+      expect(find.text('$title screen'), findsOneWidget);
+    });
+
+    testWidgets('shows error message on failure', (tester) async {
+      when(() => mockUseCase()).thenThrow(
+        Exception('Something went wrong'),
+      );
+
+      await viewModel.loadData();
+      await tester.pumpWidget(_createTestWidget(viewModel));
+
+      expect(find.textContaining('Something went wrong'), findsOneWidget);
+    });
+  });
+}
+
+class _${pascal}Body extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<${pascal}ViewModel>();
+    switch (viewModel.state) {
+      case ViewState.initial:
+      case ViewState.loading:
+        return const Center(child: CircularProgressIndicator());
+      case ViewState.error:
+        return Center(
+          child: Text(
+            viewModel.errorMessage ?? 'An error occurred',
+            style: const TextStyle(color: Colors.red),
+          ),
+        );
+      case ViewState.success:
+        return const Center(
+          child: Text('$title screen'),
+        );
+    }
+  }
+}
+''';
+  }
+
   static String generateSharedWidgetsPlaceholder() {
     return '''// Shared widgets go here.
 // Place reusable widgets that are used across multiple screens in this folder.
