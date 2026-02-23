@@ -18,7 +18,7 @@ class ProjectConfig {
 
   String get appNameSnakeCase => _toSnakeCase(appName);
 
-  String get appNamePascalCase => _toPascalCase(appName);
+  String get appNamePascalCase => toPascalCase(appName);
 
   bool hasModule(String moduleId) => selectedModules.contains(moduleId);
 
@@ -34,7 +34,7 @@ class ProjectConfig {
         .toLowerCase();
   }
 
-  static String _toPascalCase(String input) {
+  static String toPascalCase(String input) {
     return input
         .replaceAll(RegExp(r'[-_\s]+'), ' ')
         .split(' ')
