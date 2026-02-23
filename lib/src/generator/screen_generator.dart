@@ -83,7 +83,7 @@ class ScreenGenerator {
     if (forgeConfig.modules.contains('routing')) {
       print('  ~ core/routing/app_router.dart (updated)');
       print('');
-      print('Route: /$screenName');
+      print('Route: RoutePaths.$screenName -> /$screenName');
     }
     print('');
   }
@@ -175,15 +175,20 @@ class ScreenGenerator {
     }
     content = lines.join('\n');
 
+    // Add path constant before "// Add more paths here"
+    const pathMarker = '// Add more paths here';
+    final newPath = "  static const $name = '/$name';\n  $pathMarker";
+    content = content.replaceFirst(pathMarker, newPath);
+
     // Add route before "// Add more routes here"
-    const marker = '// Add more routes here';
+    const routeMarker = '// Add more routes here';
     final newRoute = '''      GoRoute(
-        path: '/$name',
+        path: RoutePaths.$name,
         name: '$name',
         builder: (context, state) => const ${pascal}View(),
       ),
-      $marker''';
-    content = content.replaceFirst(marker, newRoute);
+      $routeMarker''';
+    content = content.replaceFirst(routeMarker, newRoute);
 
     await file.writeAsString(content);
   }
