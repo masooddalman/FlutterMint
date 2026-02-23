@@ -14,6 +14,8 @@ class CicdConfig {
     this.packageName = '',
     this.firebaseGroups = 'testers',
     this.autoPublish = false,
+    this.testflightUpload = false,
+    this.bundleId = '',
   });
 
   final List<String> branches;
@@ -34,6 +36,8 @@ class CicdConfig {
   final String packageName;
   final String firebaseGroups;
   final bool autoPublish;
+  final bool testflightUpload;
+  final String bundleId;
 
   /// Get platforms for a specific branch.
   List<String> platformsForBranch(String branch) {
@@ -52,7 +56,10 @@ class CicdConfig {
   }
 
   /// True if any deployment is configured.
-  bool get hasDeployment => firebaseDistribution || googlePlayUpload;
+  bool get hasDeployment => firebaseDistribution || googlePlayUpload || testflightUpload;
+
+  /// True when iOS builds should be handled by a separate macOS deploy job.
+  bool get hasIosDeploy => testflightUpload && allPlatforms.contains('ios');
 
   /// All unique platforms across all branches (for global mode or fallback).
   List<String> get allPlatforms {
@@ -73,6 +80,7 @@ class CicdConfig {
     firebaseDistribution: false,
     googlePlayUpload: false,
     autoPublish: false,
+    testflightUpload: false,
   );
 
   static CicdConfig? fromYaml(YamlMap? yaml) {
@@ -111,6 +119,8 @@ class CicdConfig {
     var packageName = '';
     var firebaseGroups = 'testers';
     var autoPublish = false;
+    var testflightUpload = false;
+    var bundleId = '';
 
     if (deployYaml is YamlMap) {
       firebaseDistribution =
@@ -121,6 +131,8 @@ class CicdConfig {
       packageName = deployYaml['package_name'] as String? ?? '';
       firebaseGroups = deployYaml['firebase_groups'] as String? ?? 'testers';
       autoPublish = deployYaml['auto_publish'] as bool? ?? false;
+      testflightUpload = deployYaml['testflight_upload'] as bool? ?? false;
+      bundleId = deployYaml['bundle_id'] as String? ?? '';
     }
 
     return CicdConfig(
@@ -136,6 +148,8 @@ class CicdConfig {
       packageName: packageName,
       firebaseGroups: firebaseGroups,
       autoPublish: autoPublish,
+      testflightUpload: testflightUpload,
+      bundleId: bundleId,
     );
   }
 
@@ -169,6 +183,10 @@ class CicdConfig {
         lines.add('    package_name: $packageName');
       }
       lines.add('    auto_publish: $autoPublish');
+      lines.add('    testflight_upload: $testflightUpload');
+      if (testflightUpload) {
+        lines.add('    bundle_id: $bundleId');
+      }
     }
     return lines;
   }

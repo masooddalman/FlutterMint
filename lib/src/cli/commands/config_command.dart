@@ -99,6 +99,9 @@ class ConfigCommand extends Command<void> {
       if (existing.googlePlayUpload) {
         print('    Google Play: yes (${existing.packageName}, ${CicdConfig.trackLabels[existing.googlePlayTrack] ?? existing.googlePlayTrack})');
       }
+      if (existing.testflightUpload) {
+        print('    TestFlight: yes (bundle ID: ${existing.bundleId})');
+      }
       if (existing.hasDeployment) {
         print('    Auto-publish: ${existing.autoPublish ? "yes" : "no"}');
       }
@@ -117,6 +120,7 @@ class ConfigCommand extends Command<void> {
       if (existing.branchBuilds.isNotEmpty) defaultSteps.add(5);
       if (existing.firebaseDistribution) defaultSteps.add(6);
       if (existing.googlePlayUpload) defaultSteps.add(7);
+      if (existing.testflightUpload) defaultSteps.add(8);
     }
     final defaultStepsStr = defaultSteps.isNotEmpty
         ? (defaultSteps.toList()..sort()).join(',')
@@ -156,6 +160,9 @@ class ConfigCommand extends Command<void> {
     print('');
     print(stepLabel(7, 'Google Play Upload'));
     print('  $green   Upload AAB to Google Play Store (push only)$reset');
+    print('');
+    print(stepLabel(8, 'TestFlight Upload (iOS)'));
+    print('  $green   Upload IPA to TestFlight via separate macOS job (push only)$reset');
     print('');
 
     // Ask user to select steps
@@ -267,6 +274,13 @@ class ConfigCommand extends Command<void> {
       print('  ${red}Skipping Google Play Upload — AAB build is required but not configured.$reset');
     }
 
+    final hasAnyIos = allSelectedPlatforms.contains('ios');
+    final testflightUpload = selectedSteps.contains(8) && hasAnyIos;
+    if (selectedSteps.contains(8) && !hasAnyIos) {
+      print('');
+      print('  ${red}Skipping TestFlight Upload — iOS build platform is required but not configured.$reset');
+    }
+
     // Collect deployment parameters
     var firebaseGroups = existing?.firebaseGroups ?? 'testers';
     var packageName = existing?.packageName ?? 'com.example.${forgeConfig.appName}';
@@ -308,6 +322,19 @@ class ConfigCommand extends Command<void> {
       }
     }
 
+    // TestFlight setup
+    var bundleId = existing?.bundleId.isNotEmpty == true
+        ? existing!.bundleId
+        : 'com.example.${forgeConfig.appName}';
+    if (testflightUpload) {
+      print('');
+      print('  TestFlight setup:');
+      bundleId = PromptUtils.askText(
+        '  Bundle ID',
+        defaultValue: bundleId,
+      );
+    }
+
     // Publish mode
     var autoPublish = existing?.autoPublish ?? false;
     if (firebaseDistribution || googlePlayUpload) {
@@ -344,6 +371,9 @@ class ConfigCommand extends Command<void> {
     }
     if (googlePlayUpload) {
       print('    Google Play Upload: ${green}yes$reset ($packageName, ${CicdConfig.trackLabels[googlePlayTrack] ?? googlePlayTrack})');
+    }
+    if (testflightUpload) {
+      print('    TestFlight Upload: ${green}yes$reset (bundle ID: $bundleId)');
     }
     if (firebaseDistribution || googlePlayUpload) {
       print('    Publish mode: ${autoPublish ? "${green}Auto-publish$reset (release notes from whatsnew/)" : "Upload only (manual publish)"}');
@@ -383,6 +413,8 @@ class ConfigCommand extends Command<void> {
       packageName: packageName,
       firebaseGroups: firebaseGroups,
       autoPublish: autoPublish,
+      testflightUpload: testflightUpload,
+      bundleId: bundleId,
     );
 
     // 5. Save config
@@ -414,7 +446,7 @@ class ConfigCommand extends Command<void> {
     }
 
     // 7. Print secrets guidance
-    if (firebaseDistribution || googlePlayUpload) {
+    if (firebaseDistribution || googlePlayUpload || testflightUpload) {
       print('');
       print('  ${green}Required GitHub Secrets:$reset');
       print('  ─────────────────────────────────');
@@ -430,6 +462,22 @@ class ConfigCommand extends Command<void> {
         print('  GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
         print('    ${dim}Google Play service account JSON content$reset');
         print('    ${dim}Google Play Console > Setup > API Access$reset');
+      }
+      if (testflightUpload) {
+        print('  APP_STORE_CONNECT_ISSUER_ID');
+        print('    ${dim}App Store Connect API issuer ID$reset');
+        print('    ${dim}App Store Connect > Users and Access > Keys$reset');
+        print('  APP_STORE_CONNECT_KEY_ID');
+        print('    ${dim}App Store Connect API key ID$reset');
+        print('    ${dim}App Store Connect > Users and Access > Keys$reset');
+        print('  APP_STORE_CONNECT_PRIVATE_KEY');
+        print('    ${dim}App Store Connect API private key (.p8 file content)$reset');
+        print('    ${dim}App Store Connect > Users and Access > Keys$reset');
+        print('  IOS_P12_BASE64');
+        print('    ${dim}Base64-encoded Apple distribution certificate (.p12)$reset');
+        print('    ${dim}Export from Keychain Access, then: base64 -i cert.p12 | pbcopy$reset');
+        print('  IOS_P12_PASSWORD');
+        print('    ${dim}Password used when exporting the .p12 certificate$reset');
       }
       print('');
       print('  Set secrets at: https://github.com/<owner>/<repo>/settings/secrets/actions');

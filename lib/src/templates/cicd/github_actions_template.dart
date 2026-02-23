@@ -83,6 +83,7 @@ class GithubActionsTemplate {
     // Build platforms + deployment
     if (cicd.isGlobalBuild) {
       for (final platform in cicd.allPlatforms) {
+        if (cicd.hasIosDeploy && platform == 'ios') continue;
         _writeBuildStep(buf, platform);
         if (cicd.hasDeployment) {
           _writeDeploySteps(buf, platform, cicd);
@@ -92,12 +93,18 @@ class GithubActionsTemplate {
       for (final entry in cicd.branchBuilds.entries) {
         final branch = entry.key;
         for (final platform in entry.value) {
+          if (cicd.hasIosDeploy && platform == 'ios') continue;
           _writeBuildStep(buf, platform, branch: branch);
           if (cicd.hasDeployment) {
             _writeDeploySteps(buf, platform, cicd, branch: branch);
           }
         }
       }
+    }
+
+    // iOS TestFlight deploy job (separate macOS runner)
+    if (cicd.hasIosDeploy) {
+      _writeIosDeployJob(buf, cicd);
     }
 
     buf.writeln('');
@@ -202,5 +209,51 @@ class GithubActionsTemplate {
     if (releaseNotesFile != null) {
       buf.writeln('          releaseNotesFile: $releaseNotesFile');
     }
+  }
+
+  static void _writeIosDeployJob(StringBuffer buf, CicdConfig cicd) {
+    buf.writeln('');
+    buf.writeln('  ios-deploy:');
+    buf.writeln('    runs-on: macos-latest');
+    buf.writeln('    needs: [build]');
+    buf.writeln("    if: github.event_name == 'push'");
+    buf.writeln('');
+    buf.writeln('    steps:');
+    buf.writeln('      - uses: actions/checkout@v4');
+    buf.writeln('');
+    buf.writeln('      - uses: subosito/flutter-action@v2');
+    buf.writeln('        with:');
+    buf.writeln('          channel: stable');
+    if (cicd.caching) {
+      buf.writeln('          cache: true');
+    }
+    buf.writeln('');
+    buf.writeln('      - name: Install dependencies');
+    buf.writeln('        run: flutter pub get');
+    buf.writeln('');
+    buf.writeln('      - name: Import code signing certificate');
+    buf.writeln('        uses: apple-actions/import-codesign-certs@v3');
+    buf.writeln('        with:');
+    buf.writeln('          p12-file-base64: \${{ secrets.IOS_P12_BASE64 }}');
+    buf.writeln('          p12-password: \${{ secrets.IOS_P12_PASSWORD }}');
+    buf.writeln('');
+    buf.writeln('      - name: Download provisioning profiles');
+    buf.writeln('        uses: apple-actions/download-provisioning-profiles@v3');
+    buf.writeln('        with:');
+    buf.writeln('          bundle-id: ${cicd.bundleId}');
+    buf.writeln('          issuer-id: \${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}');
+    buf.writeln('          api-key-id: \${{ secrets.APP_STORE_CONNECT_KEY_ID }}');
+    buf.writeln('          api-private-key: \${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}');
+    buf.writeln('');
+    buf.writeln('      - name: Build IPA');
+    buf.writeln('        run: flutter build ipa --release');
+    buf.writeln('');
+    buf.writeln('      - name: Upload to TestFlight');
+    buf.writeln('        uses: apple-actions/upload-testflight-build@v3');
+    buf.writeln('        with:');
+    buf.writeln('          app-path: build/ios/ipa/*.ipa');
+    buf.writeln('          issuer-id: \${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}');
+    buf.writeln('          api-key-id: \${{ secrets.APP_STORE_CONNECT_KEY_ID }}');
+    buf.writeln('          api-private-key: \${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}');
   }
 }
