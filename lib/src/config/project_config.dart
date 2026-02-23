@@ -1,11 +1,15 @@
+import 'package:flutterforge/src/config/cicd_config.dart';
+
 class ProjectConfig {
   const ProjectConfig({
     required this.appName,
     required this.selectedModules,
+    this.cicdConfig,
   });
 
   final String appName;
   final List<String> selectedModules;
+  final CicdConfig? cicdConfig;
 
   String get appNameSnakeCase => _toSnakeCase(appName);
 

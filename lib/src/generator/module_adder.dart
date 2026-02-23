@@ -36,6 +36,7 @@ class ModuleAdder {
     final projectConfig = ProjectConfig(
       appName: forgeConfig.appName,
       selectedModules: allModuleIds,
+      cicdConfig: forgeConfig.cicdConfig,
     );
 
     // Step 1: Add dependencies to pubspec.yaml (only new modules)

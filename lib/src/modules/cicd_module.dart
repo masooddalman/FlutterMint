@@ -22,10 +22,17 @@ class CicdModule extends Module {
   Map<String, String> get devDependencies => {};
 
   @override
-  Map<String, String> generateFiles(ProjectConfig config) => {
-        '.github/workflows/ci.yml':
-            GithubActionsTemplate.generate(config),
-      };
+  Map<String, String> generateFiles(ProjectConfig config) {
+    final files = {
+      '.github/workflows/ci.yml':
+          GithubActionsTemplate.generate(config, cicdConfig: config.cicdConfig),
+    };
+    if (config.cicdConfig?.autoPublish == true) {
+      files['whatsnew/whatsnew-en-US'] =
+          'Bug fixes and performance improvements.\n';
+    }
+    return files;
+  }
 
   @override
   List<String> mainImports(ProjectConfig config) => [];
