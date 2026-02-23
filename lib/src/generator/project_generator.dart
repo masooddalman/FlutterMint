@@ -37,7 +37,7 @@ class ProjectGenerator {
 
     // Step 1: Run flutter create
     _printStep(1, 'Creating Flutter project...');
-    await _runFlutterCreate(config.appName);
+    await _runFlutterCreate(config.appName, config.org);
 
     // Step 2: Resolve and order selected modules
     final modules = ModuleRegistry.resolveModules(config.selectedModules);
@@ -73,6 +73,7 @@ class ProjectGenerator {
     // Step 10: Write .flutterforge.yaml config
     final forgeConfig = ForgeConfig(
       appName: config.appName,
+      org: config.org,
       modules: config.selectedModules,
     );
     await forgeConfig.save(projectPath);
@@ -111,10 +112,10 @@ class ProjectGenerator {
     }
   }
 
-  Future<void> _runFlutterCreate(String appName) async {
+  Future<void> _runFlutterCreate(String appName, String org) async {
     final result = await Process.run(
       'flutter',
-      ['create', '--org', 'com.example', appName],
+      ['create', '--org', org, appName],
       runInShell: true,
     );
     if (result.exitCode != 0) {

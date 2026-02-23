@@ -283,7 +283,7 @@ class ConfigCommand extends Command<void> {
 
     // Collect deployment parameters
     var firebaseGroups = existing?.firebaseGroups ?? 'testers';
-    var packageName = existing?.packageName ?? 'com.example.${forgeConfig.appName}';
+    var packageName = existing?.packageName ?? '${forgeConfig.org}.${forgeConfig.appName}';
     var googlePlayTrack = existing?.googlePlayTrack ?? 'internal';
 
     if (firebaseDistribution) {
@@ -325,7 +325,7 @@ class ConfigCommand extends Command<void> {
     // TestFlight setup
     var bundleId = existing?.bundleId.isNotEmpty == true
         ? existing!.bundleId
-        : 'com.example.${forgeConfig.appName}';
+        : '${forgeConfig.org}.${forgeConfig.appName}';
     if (testflightUpload) {
       print('');
       print('  TestFlight setup:');

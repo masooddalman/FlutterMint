@@ -18,6 +18,17 @@ class Wizard {
       return run(null);
     }
 
+    final org = PromptUtils.askText(
+      'Organization (reverse domain, e.g. com.mycompany)',
+      defaultValue: 'com.example',
+    );
+
+    if (!RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(org)) {
+      print('Error: "$org" is not a valid organization.');
+      print('Use reverse domain notation (e.g. com.mycompany).');
+      return run(null);
+    }
+
     print('');
     print('Select optional modules to include:');
     print('');
@@ -44,6 +55,8 @@ class Wizard {
 
     print('');
     print('Project: $appName');
+    print('Organization: $org');
+    print('Package: $org.$appName');
     print('Modules: ${selectedModules.join(", ")}');
     print('');
 
@@ -55,6 +68,7 @@ class Wizard {
 
     return ProjectConfig(
       appName: appName,
+      org: org,
       selectedModules: selectedModules,
     );
   }

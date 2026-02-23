@@ -4,12 +4,17 @@ class ProjectConfig {
   const ProjectConfig({
     required this.appName,
     required this.selectedModules,
+    this.org = 'com.example',
     this.cicdConfig,
   });
 
   final String appName;
+  final String org;
   final List<String> selectedModules;
   final CicdConfig? cicdConfig;
+
+  /// Full package identifier (e.g. com.mycompany.my_app).
+  String get packageId => '$org.$appName';
 
   String get appNameSnakeCase => _toSnakeCase(appName);
 
