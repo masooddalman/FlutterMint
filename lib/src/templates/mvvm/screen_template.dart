@@ -96,7 +96,11 @@ class ${pascal}ViewModel extends BaseViewModel {
 ''';
   }
 
-  static String generateView(String name, ProjectConfig config) {
+  static String generateView(
+    String name,
+    ProjectConfig config, {
+    Map<String, String> params = const {},
+  }) {
     final pascal = ProjectConfig.toPascalCase(name);
     final hasLocator = config.hasModule('locator');
 
@@ -114,6 +118,20 @@ class ${pascal}ViewModel extends BaseViewModel {
 
     final title = _toTitleCase(name);
 
+    // Constructor params
+    final hasParams = params.isNotEmpty;
+    final constPrefix = hasParams ? '' : 'const ';
+    final fieldDeclarations = params.entries
+        .map((e) => '  final ${e.value} ${e.key};')
+        .join('\n');
+    final constructorParams = params.keys
+        .map((k) => 'required this.$k')
+        .join(', ');
+    final constructor = hasParams
+        ? '  const ${pascal}View({super.key, $constructorParams});'
+        : '  const ${pascal}View({super.key});';
+    final fieldsBlock = hasParams ? '$fieldDeclarations\n\n$constructor' : constructor;
+
     return '''import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
@@ -122,7 +140,7 @@ import 'package:${config.appNameSnakeCase}/core/base/base_viewmodel.dart';
 import 'package:${config.appNameSnakeCase}/features/$name/viewmodels/${name}_viewmodel.dart';
 $locatorImport$nonLocatorImports
 class ${pascal}View extends StatelessWidget {
-  const ${pascal}View({super.key});
+$fieldsBlock
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +150,7 @@ class ${pascal}View extends StatelessWidget {
         builder: (context, viewModel, _) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('$title'),
+              title: ${constPrefix}Text('$title'),
             ),
             body: _buildBody(context, viewModel),
           );

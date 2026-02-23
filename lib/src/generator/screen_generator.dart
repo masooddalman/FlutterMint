@@ -13,8 +13,9 @@ class ScreenGenerator {
   Future<void> generate(
     String projectPath,
     ForgeConfig forgeConfig,
-    String screenName,
-  ) async {
+    String screenName, {
+    Map<String, String> params = const {},
+  }) async {
     final config = ProjectConfig(
       appName: forgeConfig.appName,
       org: forgeConfig.org,
@@ -31,7 +32,7 @@ class ScreenGenerator {
       'lib/features/$screenName/viewmodels/${screenName}_viewmodel.dart':
           ScreenTemplate.generateViewModel(screenName, config),
       'lib/features/$screenName/views/${screenName}_view.dart':
-          ScreenTemplate.generateView(screenName, config),
+          ScreenTemplate.generateView(screenName, config, params: params),
       'lib/domain/repositories/${screenName}_repository.dart':
           ScreenTemplate.generateRepository(screenName, config),
       'lib/data/repositories/${screenName}_repository.dart':
@@ -63,7 +64,7 @@ class ScreenGenerator {
     // Step 3: Inject into app_router.dart
     if (forgeConfig.modules.contains('routing')) {
       _printStep(3, 'Updating app_router.dart...');
-      await _injectRouter(projectPath, config, screenName, pascal);
+      await _injectRouter(projectPath, config, screenName, pascal, params);
     } else {
       _printStep(3, 'Skipping router (module not installed)');
     }
@@ -85,7 +86,10 @@ class ScreenGenerator {
     if (forgeConfig.modules.contains('routing')) {
       print('  ~ core/routing/app_router.dart (updated)');
       print('');
-      print('Route: RoutePaths.$screenName -> /$screenName');
+      final paramSegments = params.keys.map((k) => ':$k').join('/');
+      final routePath =
+          params.isEmpty ? '/$screenName' : '/$screenName/$paramSegments';
+      print('Route: RoutePaths.$screenName -> $routePath');
     }
     print('');
   }
@@ -150,6 +154,7 @@ class ScreenGenerator {
     ProjectConfig config,
     String name,
     String pascal,
+    Map<String, String> params,
   ) async {
     final routerPath =
         p.join(projectPath, 'lib', 'core', 'routing', 'app_router.dart');
@@ -177,17 +182,35 @@ class ScreenGenerator {
     }
     content = lines.join('\n');
 
+    // Build path with params: /profile/:id or /profile
+    final paramSegments = params.keys.map((k) => ':$k').join('/');
+    final routePath = params.isEmpty ? '/$name' : '/$name/$paramSegments';
+
     // Add path constant before "// Add more paths here"
     const pathMarker = '// Add more paths here';
-    final newPath = "  static const $name = '/$name';\n  $pathMarker";
+    final newPath = "  static const $name = '$routePath';\n  $pathMarker";
     content = content.replaceFirst(pathMarker, newPath);
+
+    // Build the view constructor
+    String builderLine;
+    if (params.isEmpty) {
+      builderLine =
+          '        builder: (context, state) => const ${pascal}View(),';
+    } else {
+      final paramArgs = params.keys
+          .map((k) => "          $k: state.pathParameters['$k']!,")
+          .join('\n');
+      builderLine = '        builder: (context, state) => ${pascal}View(\n'
+          '$paramArgs\n'
+          '        ),';
+    }
 
     // Add route before "// Add more routes here"
     const routeMarker = '// Add more routes here';
     final newRoute = '''      GoRoute(
         path: RoutePaths.$name,
         name: '$name',
-        builder: (context, state) => const ${pascal}View(),
+$builderLine
       ),
       $routeMarker''';
     content = content.replaceFirst(routeMarker, newRoute);

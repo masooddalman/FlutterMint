@@ -7,13 +7,21 @@ import 'package:flutterforge/src/config/forge_config.dart';
 import 'package:flutterforge/src/generator/screen_generator.dart';
 
 class ScreenCommand extends Command<void> {
+  ScreenCommand() {
+    argParser.addMultiOption(
+      'param',
+      abbr: 'p',
+      help: 'Route parameter in name:Type format (e.g. --param id:String).',
+    );
+  }
+
   @override
   final String name = 'screen';
 
   @override
   final String description =
       'Add a new screen to an existing FlutterForge project.\n'
-      'Usage: flutterforge screen <screen_name>';
+      'Usage: flutterforge screen <screen_name> [--param name:Type]';
 
   @override
   Future<void> run() async {
@@ -71,9 +79,27 @@ class ScreenCommand extends Command<void> {
       return;
     }
 
+    // Parse route params
+    final rawParams = argResults?['param'] as List<String>? ?? [];
+    final params = <String, String>{};
+    for (final raw in rawParams) {
+      final parts = raw.split(':');
+      if (parts.length != 2 || parts[0].isEmpty || parts[1].isEmpty) {
+        stderr.writeln('Error: Invalid param format "$raw".');
+        stderr.writeln('Use name:Type format (e.g. --param id:String).');
+        return;
+      }
+      params[parts[0]] = parts[1];
+    }
+
     // Generate
     print('');
     final generator = ScreenGenerator();
-    await generator.generate(projectPath, forgeConfig, screenName);
+    await generator.generate(
+      projectPath,
+      forgeConfig,
+      screenName,
+      params: params,
+    );
   }
 }
