@@ -5,11 +5,13 @@ import 'package:path/path.dart' as p;
 
 import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
 import 'package:flutterforge/src/config/cicd_config.dart';
+import 'package:flutterforge/src/config/flavors_config.dart';
 import 'package:flutterforge/src/config/forge_config.dart';
+import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/generator/file_writer.dart';
 import 'package:flutterforge/src/generator/module_adder.dart';
+import 'package:flutterforge/src/modules/module_registry.dart';
 import 'package:flutterforge/src/templates/cicd/github_actions_template.dart';
-import 'package:flutterforge/src/config/project_config.dart';
 
 class ConfigCommand extends Command<void> {
   @override
@@ -24,18 +26,20 @@ class ConfigCommand extends Command<void> {
 
     if (rest.isEmpty) {
       stderr.writeln('Usage: flutterforge config <module>');
-      stderr.writeln('Available: cicd');
+      stderr.writeln('Available: cicd, flavors');
       return;
     }
 
     final target = rest.first;
-    if (target != 'cicd') {
-      stderr.writeln('Error: Unknown configurable module "$target".');
-      stderr.writeln('Available: cicd');
-      return;
+    switch (target) {
+      case 'cicd':
+        await _configureCicd();
+      case 'flavors':
+        await _configureFlavors();
+      default:
+        stderr.writeln('Error: Unknown configurable module "$target".');
+        stderr.writeln('Available: cicd, flavors');
     }
-
-    await _configureCicd();
   }
 
   Future<void> _configureCicd() async {
@@ -491,6 +495,432 @@ class ConfigCommand extends Command<void> {
       print('  This file is used by both Firebase and Google Play for release notes.');
       print('  ${dim}Tip: Add additional locale files like whatsnew-de-DE for Google Play.$reset');
     }
+  }
+
+  Future<void> _configureFlavors() async {
+    final projectPath = Directory.current.path;
+
+    // 1. Load existing config
+    var forgeConfig = ForgeConfig.load(projectPath);
+    if (forgeConfig == null) {
+      stderr.writeln(
+        'Error: No FlutterForge project found in the current directory.',
+      );
+      stderr.writeln(
+        'Make sure you are inside a project created with "flutterforge create".',
+      );
+      return;
+    }
+
+    // 2. Auto-add flavors module if not installed
+    if (!forgeConfig.modules.contains('flavors')) {
+      print('Flavors module is not installed. Adding it first...');
+      print('');
+      final adder = ModuleAdder();
+      await adder.add(projectPath, forgeConfig, ['flavors']);
+      forgeConfig = ForgeConfig.load(projectPath)!;
+    }
+
+    // 3. Load existing flavors config
+    final existing = forgeConfig.flavorsConfig;
+
+    PromptUtils.printHeader('Flavors / Environments Configuration');
+
+    const green = '\x1B[32m';
+    const dim = '\x1B[2m';
+    const reset = '\x1B[0m';
+
+    FlavorsConfig flavorsConfig;
+
+    if (existing != null) {
+      // Show current config
+      _printFlavorsOverview(existing, green, dim, reset);
+
+      // Action menu — edit one, add, remove, or reconfigure all
+      flavorsConfig = _flavorsActionMenu(existing, green, dim, reset);
+    } else {
+      // Fresh setup
+      flavorsConfig = _flavorsFullSetup(null, green, dim, reset);
+    }
+
+    // Summary
+    _printFlavorsSummary(flavorsConfig, green, reset);
+
+    final confirm = PromptUtils.askYesNo('Proceed?', defaultValue: true);
+    if (!confirm) {
+      print('Cancelled.');
+      return;
+    }
+
+    // Save & regenerate
+    await _saveFlavorsConfig(
+      projectPath, forgeConfig, flavorsConfig, green, reset,
+    );
+  }
+
+  void _printFlavorsOverview(
+    FlavorsConfig config,
+    String green,
+    String dim,
+    String reset,
+  ) {
+    print('  ${dim}Current environments:$reset');
+    print('    Default: ${config.defaultEnvironment}');
+    for (final env in config.environments) {
+      print('    ── ${env.name} ──');
+      print('      API: ${env.apiBaseUrl}');
+      if (env.appNameSuffix.isNotEmpty) {
+        print('      Name suffix: ${env.appNameSuffix}');
+      }
+      if (env.appIdSuffix.isNotEmpty) {
+        print('      ID suffix: ${env.appIdSuffix}');
+      }
+      if (env.custom.isNotEmpty) {
+        for (final kv in env.custom.entries) {
+          print('      ${kv.key}: ${kv.value}');
+        }
+      }
+    }
+    print('');
+  }
+
+  FlavorsConfig _flavorsActionMenu(
+    FlavorsConfig existing,
+    String green,
+    String dim,
+    String reset,
+  ) {
+    print('  What would you like to do?');
+    print('    1) Edit an environment');
+    print('    2) Add a new environment');
+    print('    3) Remove an environment');
+    print('    4) Reconfigure all environments');
+    print('');
+    final choice = PromptUtils.askText('  Choice', defaultValue: '1');
+
+    switch (choice) {
+      case '1':
+        return _flavorsEditOne(existing, dim, reset);
+      case '2':
+        return _flavorsAddOne(existing, dim, reset);
+      case '3':
+        return _flavorsRemoveOne(existing, green, reset);
+      case '4':
+        return _flavorsFullSetup(existing, green, dim, reset);
+      default:
+        print('  Invalid choice. Defaulting to edit.');
+        return _flavorsEditOne(existing, dim, reset);
+    }
+  }
+
+  FlavorsConfig _flavorsEditOne(
+    FlavorsConfig existing,
+    String dim,
+    String reset,
+  ) {
+    final envNames = existing.environments.map((e) => e.name).toList();
+
+    // Pick which environment to edit
+    print('');
+    print('  Which environment to edit?');
+    for (var i = 0; i < envNames.length; i++) {
+      print('    ${i + 1}) ${envNames[i]}');
+    }
+    print('');
+    final pick = PromptUtils.askText('  Choice', defaultValue: '1');
+    final idx = int.tryParse(pick);
+    final selectedIdx = (idx != null && idx >= 1 && idx <= envNames.length)
+        ? idx - 1
+        : 0;
+    final selectedName = envNames[selectedIdx];
+
+    // Edit the selected environment, keep others unchanged
+    final environments = <EnvironmentConfig>[];
+    for (final env in existing.environments) {
+      if (env.name == selectedName) {
+        environments.add(_askEnvironmentConfig(env.name, env, dim, reset));
+      } else {
+        environments.add(env);
+      }
+    }
+
+    return FlavorsConfig(
+      environments: environments,
+      defaultEnvironment: existing.defaultEnvironment,
+    );
+  }
+
+  FlavorsConfig _flavorsAddOne(
+    FlavorsConfig existing,
+    String dim,
+    String reset,
+  ) {
+    print('');
+    final name = PromptUtils.askText('  New environment name (e.g. qa)');
+    final cleanName = name.trim().toLowerCase();
+    if (cleanName.isEmpty || !RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(cleanName)) {
+      print('  Invalid name. Cancelled.');
+      return existing;
+    }
+    if (existing.environments.any((e) => e.name == cleanName)) {
+      print('  Environment "$cleanName" already exists. Use "edit" instead.');
+      return existing;
+    }
+
+    final newEnv = _askEnvironmentConfig(cleanName, null, dim, reset);
+    final environments = [...existing.environments, newEnv];
+
+    return FlavorsConfig(
+      environments: environments,
+      defaultEnvironment: existing.defaultEnvironment,
+    );
+  }
+
+  FlavorsConfig _flavorsRemoveOne(
+    FlavorsConfig existing,
+    String green,
+    String reset,
+  ) {
+    final envNames = existing.environments.map((e) => e.name).toList();
+    if (envNames.length <= 1) {
+      print('  Cannot remove the only environment. Use "flutterforge remove flavors" instead.');
+      return existing;
+    }
+
+    print('');
+    print('  Which environment to remove?');
+    for (var i = 0; i < envNames.length; i++) {
+      print('    ${i + 1}) ${envNames[i]}');
+    }
+    print('');
+    final pick = PromptUtils.askText('  Choice', defaultValue: '1');
+    final idx = int.tryParse(pick);
+    final selectedIdx = (idx != null && idx >= 1 && idx <= envNames.length)
+        ? idx - 1
+        : -1;
+    if (selectedIdx < 0) {
+      print('  Invalid choice. Cancelled.');
+      return existing;
+    }
+
+    final removedName = envNames[selectedIdx];
+    final environments = existing.environments
+        .where((e) => e.name != removedName)
+        .toList();
+
+    // If removed env was the default, switch to the last remaining
+    var defaultEnv = existing.defaultEnvironment;
+    if (defaultEnv == removedName) {
+      defaultEnv = environments.last.name;
+      print('  ${green}Default changed to: $defaultEnv$reset');
+    }
+
+    print('  Removing environment: $removedName');
+    return FlavorsConfig(
+      environments: environments,
+      defaultEnvironment: defaultEnv,
+    );
+  }
+
+  FlavorsConfig _flavorsFullSetup(
+    FlavorsConfig? existing,
+    String green,
+    String dim,
+    String reset,
+  ) {
+    if (existing != null) {
+      print('  ${dim}Press Enter to keep current values.$reset');
+      print('');
+    }
+
+    // Ask for environment names
+    final existingNames =
+        existing?.environments.map((e) => e.name).join(', ') ??
+            'dev, staging, production';
+    final envNamesInput = PromptUtils.askText(
+      'Environment names (comma-separated)',
+      defaultValue: existingNames,
+    );
+
+    final envNames = envNamesInput
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .where(
+            (s) => s.isNotEmpty && RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(s))
+        .toList();
+
+    if (envNames.isEmpty) {
+      print('No valid environment names. Using defaults.');
+      return existing ?? FlavorsConfig.defaults;
+    }
+
+    // Configure each environment
+    final environments = <EnvironmentConfig>[];
+    for (final name in envNames) {
+      final existingEnv = existing?.environments
+          .where((e) => e.name == name)
+          .firstOrNull;
+      environments.add(_askEnvironmentConfig(name, existingEnv, dim, reset));
+    }
+
+    // Default environment
+    final defaultEnv = PromptUtils.askText(
+      'Default environment',
+      defaultValue: existing?.defaultEnvironment ?? envNames.last,
+    );
+
+    return FlavorsConfig(
+      environments: environments,
+      defaultEnvironment:
+          envNames.contains(defaultEnv) ? defaultEnv : envNames.last,
+    );
+  }
+
+  EnvironmentConfig _askEnvironmentConfig(
+    String name,
+    EnvironmentConfig? existing,
+    String dim,
+    String reset,
+  ) {
+    print('');
+    print('  ── $name ──');
+
+    final apiUrl = PromptUtils.askText(
+      '    API base URL',
+      defaultValue: existing?.apiBaseUrl ?? 'https://$name-api.example.com',
+    );
+
+    final defaultNameSuffix = existing?.appNameSuffix ??
+        ' ${name[0].toUpperCase()}${name.substring(1)}';
+    final appNameSuffix = PromptUtils.askText(
+      '    App name suffix (e.g. " Dev", empty for none)',
+      defaultValue: defaultNameSuffix,
+    );
+
+    final defaultIdSuffix = existing?.appIdSuffix ?? '.$name';
+    final appIdSuffix = PromptUtils.askText(
+      '    App ID suffix (e.g. ".dev", empty for none)',
+      defaultValue: defaultIdSuffix,
+    );
+
+    // Custom key-value pairs
+    final custom = <String, String>{};
+    if (existing != null && existing.custom.isNotEmpty) {
+      print(
+          '    ${dim}Current custom keys: ${existing.custom.keys.join(", ")}$reset');
+    }
+    final wantCustom = PromptUtils.askYesNo(
+      '    Add/edit custom config keys?',
+      defaultValue: existing?.custom.isNotEmpty ?? false,
+    );
+    if (wantCustom) {
+      if (existing != null) {
+        for (final kv in existing.custom.entries) {
+          final val = PromptUtils.askText(
+            '      ${kv.key}',
+            defaultValue: kv.value,
+          );
+          custom[kv.key] = val;
+        }
+      }
+      while (true) {
+        final key = PromptUtils.askText(
+          '      New key (or "done" to finish)',
+        );
+        if (key.toLowerCase() == 'done') break;
+        final value = PromptUtils.askText('      Value');
+        custom[key] = value;
+      }
+    }
+
+    return EnvironmentConfig(
+      name: name,
+      apiBaseUrl: apiUrl,
+      appNameSuffix: appNameSuffix,
+      appIdSuffix: appIdSuffix,
+      custom: custom,
+    );
+  }
+
+  void _printFlavorsSummary(
+    FlavorsConfig config,
+    String green,
+    String reset,
+  ) {
+    print('');
+    print('  Summary:');
+    for (final env in config.environments) {
+      final suffix = env.name == config.defaultEnvironment
+          ? ' $green(default)$reset'
+          : '';
+      print('    $green${env.name}$reset$suffix');
+      print('      API: ${env.apiBaseUrl}');
+      if (env.appNameSuffix.isNotEmpty) {
+        print('      Name suffix: ${env.appNameSuffix}');
+      }
+      if (env.appIdSuffix.isNotEmpty) {
+        print('      ID suffix: ${env.appIdSuffix}');
+      }
+      for (final kv in env.custom.entries) {
+        print('      ${kv.key}: ${kv.value}');
+      }
+    }
+    print('');
+  }
+
+  Future<void> _saveFlavorsConfig(
+    String projectPath,
+    ForgeConfig forgeConfig,
+    FlavorsConfig flavorsConfig,
+    String green,
+    String reset,
+  ) async {
+    // Save config
+    final updatedConfig = forgeConfig.withFlavorsConfig(flavorsConfig);
+    await updatedConfig.save(projectPath);
+
+    // Delete old config/*.json files first (env names may have changed)
+    final configDir = Directory(p.join(projectPath, 'config'));
+    if (await configDir.exists()) {
+      await for (final entity in configDir.list()) {
+        if (entity is File && entity.path.endsWith('.json')) {
+          await entity.delete();
+        }
+      }
+    }
+
+    // Regenerate all files via module generateFiles
+    final allModuleIds = forgeConfig.modules.toList();
+    final allModules = ModuleRegistry.resolveModules(allModuleIds);
+    final projectConfig = ProjectConfig(
+      appName: forgeConfig.appName,
+      org: forgeConfig.org,
+      selectedModules: allModuleIds,
+      cicdConfig: forgeConfig.cicdConfig,
+      flavorsConfig: flavorsConfig,
+    );
+
+    // Regenerate env config + JSON files
+    final fileWriter = FileWriter();
+    final flavorsModule = allModules.where((m) => m.id == 'flavors').first;
+    final files = flavorsModule.generateFiles(projectConfig);
+    for (final entry in files.entries) {
+      await fileWriter.write(p.join(projectPath, entry.key), entry.value);
+    }
+
+    print('');
+    print('Flavors configuration saved!');
+    print('  Updated: .flutterforge.yaml');
+    print('  Updated: lib/core/config/env_config.dart');
+    for (final env in flavorsConfig.environments) {
+      print('  Updated: config/${env.name}.json');
+    }
+    print('');
+    print('  ${green}Usage:$reset');
+    for (final env in flavorsConfig.environments) {
+      print('    flutter run --dart-define-from-file=config/${env.name}.json');
+    }
+    print('');
   }
 
   List<String> _askPlatforms(

@@ -21,10 +21,11 @@ Beyond initial scaffolding, FlutterForge manages the project lifecycle. You can 
 ### Key Capabilities
 
 - **Interactive wizard** — guided project setup with module selection and organization/package name configuration
-- **12 modules** — MVVM, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, and CI/CD
+- **13 modules** — MVVM, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, CI/CD, and flavors/environments
 - **Screen generator** — `flutterforge screen <name>` scaffolds a complete MVVM screen with auto-injection into locator and router, optional route parameters, and test generation
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
+- **Flavors / Environments** — compile-time environment config via `--dart-define-from-file` with per-environment JSON files and interactive config wizard
 - **Clean architecture** — domain/data/feature layers with repositories, use cases, and view models
 
 ## Installation
@@ -111,6 +112,29 @@ flutterforge disable-http
 - **Android:** adds/removes `android:usesCleartextTraffic="true"` in `AndroidManifest.xml`
 - **iOS:** adds/removes `NSAppTransportSecurity` with `NSAllowsArbitraryLoads` in `Info.plist`
 
+### Configure Flavors / Environments
+
+```bash
+# Add flavors module and configure environments
+flutterforge config flavors
+```
+
+When configuring an existing project, an action menu lets you:
+1. **Edit** a single environment without affecting others
+2. **Add** a new environment
+3. **Remove** an environment
+4. **Reconfigure all** environments from scratch
+
+Generated files:
+- `config/dev.json`, `config/staging.json`, etc. — per-environment config values
+- `lib/core/config/env_config.dart` — compile-time constants via `String.fromEnvironment()`
+
+Run with a specific environment:
+```bash
+flutter run --dart-define-from-file=config/dev.json
+flutter run --dart-define-from-file=config/production.json
+```
+
 ### Configure CI/CD
 
 ```bash
@@ -141,6 +165,7 @@ Opens an interactive wizard to configure:
 | **toast** | No | Toast notifications via `ScaffoldMessenger` | — |
 | **testing** | No | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
 | **cicd** | No | GitHub Actions workflow with build, test, and deployment steps | — |
+| **flavors** | No | Per-environment JSON configs with compile-time `EnvConfig` via `--dart-define-from-file` | — |
 
 Module dependencies are resolved automatically. For example, enabling `theming` auto-includes `mvvm`, and enabling `ai` auto-includes `api`.
 
@@ -161,6 +186,8 @@ my_app/
 │   │   ├── ai/                               # AI service template
 │   │   ├── localization/arb/                 # ARB translation files
 │   │   ├── routing/app_router.dart           # GoRouter config + RoutePaths
+│   │   ├── config/
+│   │   │   └── env_config.dart               # Compile-time env constants
 │   │   ├── services/
 │   │   │   ├── logger_service.dart           # Logging
 │   │   │   └── toast_service.dart            # Toast notifications
@@ -182,6 +209,10 @@ my_app/
 ├── test/
 │   ├── features/home/                        # Example tests
 │   └── helpers/test_helpers.dart              # Mocks and setup
+├── config/
+│   ├── dev.json                               # Dev environment config
+│   ├── staging.json                           # Staging environment config
+│   └── production.json                        # Production environment config
 ├── .github/workflows/ci.yml                  # CI/CD pipeline
 ├── whatsnew/whatsnew-en-US                    # Release notes
 ├── .flutterforge.yaml                        # Project config
@@ -249,6 +280,19 @@ cicd:
     auto_publish: false
     testflight_upload: true
     bundle_id: com.mycompany.my_app
+flavors:
+  default: production
+  environments:
+    - name: dev
+      api_base_url: https://dev-api.example.com
+      app_name_suffix: " Dev"
+      app_id_suffix: .dev
+    - name: staging
+      api_base_url: https://staging-api.example.com
+      app_name_suffix: " Staging"
+      app_id_suffix: .staging
+    - name: production
+      api_base_url: https://api.example.com
 ```
 
 ## Technical Details
@@ -297,7 +341,7 @@ cicd:
 - [ ] Web deployment via Firebase Hosting
 - [ ] Bitbucket Pipelines and GitLab CI templates
 - [ ] Fastlane integration for iOS/Android signing
-- [ ] Flavors/environments support (dev, staging, production)
+- [x] Flavors/environments support (dev, staging, production)
 - [ ] Custom module authoring (user-defined templates)
 - [ ] `flutterforge upgrade` command to update module templates in existing projects
 - [ ] `flutterforge doctor` command to validate project health

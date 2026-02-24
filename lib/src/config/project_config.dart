@@ -1,4 +1,5 @@
 import 'package:flutterforge/src/config/cicd_config.dart';
+import 'package:flutterforge/src/config/flavors_config.dart';
 
 class ProjectConfig {
   const ProjectConfig({
@@ -6,12 +7,14 @@ class ProjectConfig {
     required this.selectedModules,
     this.org = 'com.example',
     this.cicdConfig,
+    this.flavorsConfig,
   });
 
   final String appName;
   final String org;
   final List<String> selectedModules;
   final CicdConfig? cicdConfig;
+  final FlavorsConfig? flavorsConfig;
 
   /// Full package identifier (e.g. com.mycompany.my_app).
   String get packageId => '$org.$appName';

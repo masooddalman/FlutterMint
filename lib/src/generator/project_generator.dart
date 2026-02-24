@@ -85,6 +85,7 @@ class ProjectGenerator {
       appName: config.appName,
       org: config.org,
       modules: config.selectedModules,
+      flavorsConfig: config.flavorsConfig,
     );
     await forgeConfig.save(projectPath);
 

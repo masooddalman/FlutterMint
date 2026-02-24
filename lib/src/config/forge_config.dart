@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
 import 'package:flutterforge/src/config/cicd_config.dart';
+import 'package:flutterforge/src/config/flavors_config.dart';
 
 class ForgeConfig {
   const ForgeConfig({
@@ -11,12 +12,14 @@ class ForgeConfig {
     required this.modules,
     this.org = 'com.example',
     this.cicdConfig,
+    this.flavorsConfig,
   });
 
   final String appName;
   final String org;
   final List<String> modules;
   final CicdConfig? cicdConfig;
+  final FlavorsConfig? flavorsConfig;
 
   static const String fileName = '.flutterforge.yaml';
 
@@ -38,12 +41,14 @@ class ForgeConfig {
     if (appName == null || modulesList == null) return null;
 
     final cicd = CicdConfig.fromYaml(yaml['cicd'] as YamlMap?);
+    final flavors = FlavorsConfig.fromYaml(yaml['flavors'] as YamlMap?);
 
     return ForgeConfig(
       appName: appName,
       org: org,
       modules: modulesList.cast<String>().toList(),
       cicdConfig: cicd,
+      flavorsConfig: flavors,
     );
   }
 
@@ -61,6 +66,11 @@ class ForgeConfig {
         buffer.writeln(line);
       }
     }
+    if (flavorsConfig != null) {
+      for (final line in flavorsConfig!.toYamlLines()) {
+        buffer.writeln(line);
+      }
+    }
     await file.writeAsString(buffer.toString());
   }
 
@@ -69,17 +79,23 @@ class ForgeConfig {
     for (final m in additionalModules) {
       if (!merged.contains(m)) merged.add(m);
     }
-    return ForgeConfig(appName: appName, org: org, modules: merged, cicdConfig: cicdConfig);
+    return ForgeConfig(appName: appName, org: org, modules: merged, cicdConfig: cicdConfig, flavorsConfig: flavorsConfig);
   }
 
   ForgeConfig withoutModules(List<String> moduleIdsToRemove) {
     final remaining = modules.where((m) => !moduleIdsToRemove.contains(m)).toList();
     // Clear cicd config if cicd module is being removed
     final keepCicd = !moduleIdsToRemove.contains('cicd') ? cicdConfig : null;
-    return ForgeConfig(appName: appName, org: org, modules: remaining, cicdConfig: keepCicd);
+    // Clear flavors config if flavors module is being removed
+    final keepFlavors = !moduleIdsToRemove.contains('flavors') ? flavorsConfig : null;
+    return ForgeConfig(appName: appName, org: org, modules: remaining, cicdConfig: keepCicd, flavorsConfig: keepFlavors);
   }
 
   ForgeConfig withCicdConfig(CicdConfig config) {
-    return ForgeConfig(appName: appName, org: org, modules: modules, cicdConfig: config);
+    return ForgeConfig(appName: appName, org: org, modules: modules, cicdConfig: config, flavorsConfig: flavorsConfig);
+  }
+
+  ForgeConfig withFlavorsConfig(FlavorsConfig config) {
+    return ForgeConfig(appName: appName, org: org, modules: modules, cicdConfig: cicdConfig, flavorsConfig: config);
   }
 }
