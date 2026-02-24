@@ -10,6 +10,7 @@ import 'package:flutterforge/src/config/forge_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/generator/file_writer.dart';
 import 'package:flutterforge/src/generator/module_adder.dart';
+import 'package:flutterforge/src/generator/platform_configurator.dart';
 import 'package:flutterforge/src/modules/module_registry.dart';
 import 'package:flutterforge/src/templates/cicd/github_actions_template.dart';
 
@@ -907,6 +908,16 @@ class ConfigCommand extends Command<void> {
     for (final entry in files.entries) {
       await fileWriter.write(p.join(projectPath, entry.key), entry.value);
     }
+
+    // Ensure native platform files are configured (idempotent)
+    await PlatformConfigurator.configureFlavorsAndroid(
+      projectPath,
+      forgeConfig.appName,
+    );
+    await PlatformConfigurator.configureFlavorsIos(
+      projectPath,
+      forgeConfig.appName,
+    );
 
     print('');
     print('Flavors configuration saved!');

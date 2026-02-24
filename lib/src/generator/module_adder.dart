@@ -53,13 +53,25 @@ class ModuleAdder {
     _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
     await _composer.compose(projectPath, projectConfig, allModules);
 
-    // Step 4: Configure platform files (Android permissions)
-    if (newModuleIds.contains('api')) {
+    // Step 4: Configure platform files
+    if (newModuleIds.contains('api') || newModuleIds.contains('flavors')) {
       _printStep(4, 'Configuring platform files...');
-      await PlatformConfigurator.addAndroidPermissions(projectPath, [
-        'android.permission.INTERNET',
-        'android.permission.ACCESS_NETWORK_STATE',
-      ]);
+      if (newModuleIds.contains('api')) {
+        await PlatformConfigurator.addAndroidPermissions(projectPath, [
+          'android.permission.INTERNET',
+          'android.permission.ACCESS_NETWORK_STATE',
+        ]);
+      }
+      if (newModuleIds.contains('flavors')) {
+        await PlatformConfigurator.configureFlavorsAndroid(
+          projectPath,
+          forgeConfig.appName,
+        );
+        await PlatformConfigurator.configureFlavorsIos(
+          projectPath,
+          forgeConfig.appName,
+        );
+      }
     }
 
     // Step 5: Run flutter pub get

@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 
 import 'package:flutterforge/src/config/forge_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
+import 'package:flutterforge/src/generator/platform_configurator.dart';
 import 'package:flutterforge/src/generator/pubspec_editor.dart';
 import 'package:flutterforge/src/generator/shared_file_composer.dart';
 import 'package:flutterforge/src/modules/module.dart';
@@ -50,7 +51,16 @@ class ModuleRemover {
     _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
     await _composer.compose(projectPath, projectConfig, remainingModules);
 
-    // Step 4: If locator was removed, delete locator.dart
+    // Step 4a: Revert native platform config for flavors
+    if (moduleIdsToRemove.contains('flavors')) {
+      await PlatformConfigurator.revertFlavorsAndroid(
+        projectPath,
+        forgeConfig.appName,
+      );
+      await PlatformConfigurator.revertFlavorsIos(projectPath);
+    }
+
+    // Step 4b: If locator was removed, delete locator.dart
     if (moduleIdsToRemove.contains('locator') && !remainingIds.contains('locator')) {
       final locatorFile = File(p.join(projectPath, 'lib', 'app', 'locator.dart'));
       if (await locatorFile.exists()) {
