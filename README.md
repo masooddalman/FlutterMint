@@ -26,6 +26,7 @@ Beyond initial scaffolding, FlutterForge manages the project lifecycle. You can 
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
 - **Flavors / Environments** — compile-time environment config via `--dart-define-from-file` with per-environment JSON files and interactive config wizard
+- **Run & Build commands** — `flutterforge run` and `flutterforge build` with interactive flavor, device, platform, and build mode selection
 - **Clean architecture** — domain/data/feature layers with repositories, use cases, and view models
 
 ## Installation
@@ -129,11 +130,46 @@ Generated files:
 - `config/dev.json`, `config/staging.json`, etc. — per-environment config values
 - `lib/core/config/env_config.dart` — compile-time constants via `String.fromEnvironment()`
 
-Run with a specific environment:
+Run with a specific environment using `flutterforge run` (see below) or manually:
 ```bash
 flutter run --dart-define-from-file=config/dev.json
 flutter run --dart-define-from-file=config/production.json
 ```
+
+### Run a project
+
+```bash
+flutterforge run
+```
+
+Interactive prompts guide you through:
+1. **Environment** — select which flavor/environment to use (only if flavors module is installed)
+2. **Device** — select from connected devices (auto-selects if only one device is detected)
+
+Runs `flutter run` with the selected device and `--dart-define-from-file` for the chosen environment. Hot reload and all flutter output are passed through directly.
+
+### Build a project
+
+```bash
+flutterforge build
+```
+
+Interactive prompts guide you through:
+1. **Build mode** — debug or release (default: release)
+2. **Environment** — select flavor (only if flavors module is installed)
+3. **Platform** — APK, App Bundle (AAB), or iOS (.app)
+4. **APK type** — fat APK or split per ABI (only for APK builds)
+
+After a successful Android build, the output file is renamed to a descriptive format:
+```
+my_app-staging-release-v1.2.0.apk
+my_app-production-release-v1.2.0.aab
+my_app-dev-debug-v1.0.0-arm64-v8a.apk   (split per ABI)
+```
+
+**Android signing check:** When building a release APK or AAB without `android/key.properties`, a warning is shown explaining that debug keys are not suitable for Play Store distribution, with the option to continue or cancel.
+
+**iOS builds:** After a successful `flutter build ios`, next steps are printed to guide you through Xcode for device testing or archiving for distribution.
 
 ### Configure CI/CD
 
@@ -317,7 +353,7 @@ flavors:
 3. **Pubspec editing** — module dependencies are injected into `pubspec.yaml`
 4. **File generation** — each module emits its files via `generateFiles()`
 5. **Shared file composition** — `main.dart`, `app.dart`, and `locator.dart` are composed by collecting imports, setup lines, provider declarations, and service registrations from all active modules
-6. **Platform configuration** — Android permissions are added to `AndroidManifest.xml` when the API module is included
+6. **Platform configuration** — Android permissions are added to `AndroidManifest.xml` when the API module is included; flavors inject dart-defines decoding into `build.gradle(.kts)` for native app name and package name suffixes
 7. **`flutter pub get`** — resolves the dependency tree
 8. **Config persistence** — `.flutterforge.yaml` records the project state
 
