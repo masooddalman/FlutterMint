@@ -1,6 +1,7 @@
 import 'package:flutterforge/src/modules/ai_module.dart';
 import 'package:flutterforge/src/modules/api_module.dart';
 import 'package:flutterforge/src/modules/cicd_module.dart';
+import 'package:flutterforge/src/modules/flavors_module.dart';
 import 'package:flutterforge/src/modules/localization_module.dart';
 import 'package:flutterforge/src/modules/locator_module.dart';
 import 'package:flutterforge/src/modules/logging_module.dart';
@@ -28,6 +29,7 @@ class ModuleRegistry {
     ToastModule(),
     TestingModule(),
     CicdModule(),
+    FlavorsModule(),
   ];
 
   static List<Module> get allModules => _allModules;
