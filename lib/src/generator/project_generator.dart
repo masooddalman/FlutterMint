@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutterforge/src/config/forge_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/generator/file_writer.dart';
+import 'package:flutterforge/src/generator/platform_configurator.dart';
 import 'package:flutterforge/src/generator/pubspec_editor.dart';
 import 'package:flutterforge/src/generator/shared_file_composer.dart';
 import 'package:flutterforge/src/modules/module.dart';
@@ -57,20 +58,29 @@ class ProjectGenerator {
     _printStep(4, 'Composing application files...');
     await _composer.compose(projectPath, config, modules);
 
-    // Step 7: Generate analysis_options.yaml
+    // Step 7: Configure platform files (Android permissions)
+    if (config.hasModule('api')) {
+      _printStep(5, 'Configuring platform files...');
+      await PlatformConfigurator.addAndroidPermissions(projectPath, [
+        'android.permission.INTERNET',
+        'android.permission.ACCESS_NETWORK_STATE',
+      ]);
+    }
+
+    // Step 8: Generate analysis_options.yaml
     await _generateAnalysisOptions(projectPath);
 
-    // Step 8: Run flutter pub get
-    _printStep(5, 'Resolving dependencies...');
+    // Step 9: Run flutter pub get
+    _printStep(6, 'Resolving dependencies...');
     await _runPubGet(projectPath);
 
-    // Step 9: Generate localization files if needed
+    // Step 10: Generate localization files if needed
     if (config.hasModule('localization')) {
-      _printStep(6, 'Generating localization files...');
+      _printStep(7, 'Generating localization files...');
       await _runGenL10n(projectPath);
     }
 
-    // Step 10: Write .flutterforge.yaml config
+    // Step 11: Write .flutterforge.yaml config
     final forgeConfig = ForgeConfig(
       appName: config.appName,
       org: config.org,

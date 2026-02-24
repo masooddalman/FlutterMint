@@ -13,7 +13,7 @@ class AiModule extends Module {
   bool get isDefault => false;
 
   @override
-  List<String> get dependsOn => [];
+  List<String> get dependsOn => ['api'];
 
   @override
   Map<String, String> get dependencies => {};
