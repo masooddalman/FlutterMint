@@ -128,6 +128,72 @@ class PlatformConfigurator {
     print('    + NSAppTransportSecurity (NSAllowsArbitraryLoads = true)');
   }
 
+  /// Removes `android:usesCleartextTraffic="true"` from the main AndroidManifest.xml.
+  static Future<void> disableHttpAndroid(String projectPath) async {
+    final manifestPath = p.join(
+      projectPath,
+      'android',
+      'app',
+      'src',
+      'main',
+      'AndroidManifest.xml',
+    );
+
+    final file = File(manifestPath);
+    if (!await file.exists()) {
+      stderr.writeln('Warning: AndroidManifest.xml not found. Skipping.');
+      return;
+    }
+
+    var content = await file.readAsString();
+
+    if (!content.contains('android:usesCleartextTraffic')) {
+      print('    Android: usesCleartextTraffic not found. Already disabled.');
+      return;
+    }
+
+    // Remove the attribute and its preceding newline/whitespace
+    content = content.replaceFirst(
+      RegExp(r'\n\s*android:usesCleartextTraffic="true"'),
+      '',
+    );
+
+    await file.writeAsString(content);
+    print('    - android:usesCleartextTraffic removed');
+  }
+
+  /// Removes `NSAppTransportSecurity` block from `ios/Runner/Info.plist`.
+  static Future<void> disableHttpIos(String projectPath) async {
+    final plistPath = p.join(
+      projectPath,
+      'ios',
+      'Runner',
+      'Info.plist',
+    );
+
+    final file = File(plistPath);
+    if (!await file.exists()) {
+      stderr.writeln('Warning: ios/Runner/Info.plist not found. Skipping iOS.');
+      return;
+    }
+
+    var content = await file.readAsString();
+
+    if (!content.contains('NSAppTransportSecurity')) {
+      print('    iOS: NSAppTransportSecurity not found. Already disabled.');
+      return;
+    }
+
+    // Remove the NSAppTransportSecurity block (key + dict)
+    content = content.replaceFirst(
+      RegExp(r'\s*<key>NSAppTransportSecurity</key>\s*<dict>\s*<key>NSAllowsArbitraryLoads</key>\s*<true/>\s*</dict>'),
+      '',
+    );
+
+    await file.writeAsString(content);
+    print('    - NSAppTransportSecurity removed');
+  }
+
   /// Adds `android:usesCleartextTraffic="true"` to an AndroidManifest.xml.
   static Future<void> _addCleartextTraffic(String manifestPath) async {
     final file = File(manifestPath);
