@@ -3,9 +3,13 @@
 > A CLI tool that generates production-ready Flutter projects with pre-configured architecture, modules, and CI/CD pipelines.
 
 <p align="center">
-  <img src="assets/banner.png" alt="FlutterForge Banner" width=""400" />
+  <img src="assets/banner.png" alt="FlutterForge Banner" width="400" />
 </p>
+  <img src="assets/flutterForge.png" alt="FlutterForge"
+  width="400">
+<p align="center">
 
+</p>
 ## What is FlutterForge?
 
 FlutterForge scaffolds Flutter projects with a clean, opinionated architecture out of the box. Instead of spending hours wiring up state management, dependency injection, routing, theming, API layers, and CI/CD pipelines, you run a single command and get a project that's ready for feature development.
