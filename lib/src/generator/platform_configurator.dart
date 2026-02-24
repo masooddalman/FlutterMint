@@ -77,22 +77,6 @@ class PlatformConfigurator {
     await _addCleartextTraffic(manifestPath);
   }
 
-  /// Enables cleartext HTTP traffic on Android for debug builds only.
-  ///
-  /// Adds `android:usesCleartextTraffic="true"` to the `<application>` tag
-  /// in the debug AndroidManifest.xml.
-  static Future<void> enableHttpAndroidDebug(String projectPath) async {
-    final manifestPath = p.join(
-      projectPath,
-      'android',
-      'app',
-      'src',
-      'debug',
-      'AndroidManifest.xml',
-    );
-    await _addCleartextTraffic(manifestPath);
-  }
-
   /// Enables HTTP connections on iOS by configuring App Transport Security.
   ///
   /// Adds `NSAppTransportSecurity` with `NSAllowsArbitraryLoads = true`
