@@ -21,6 +21,7 @@ class SharedFileComposer {
     if (config.hasModule('locator')) {
       await _composeLocatorDart(projectPath, config, modules);
     }
+
   }
 
   Future<void> _composeMainDart(

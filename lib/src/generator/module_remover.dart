@@ -35,6 +35,7 @@ class ModuleRemover {
       appName: forgeConfig.appName,
       selectedModules: remainingIds,
       cicdConfig: forgeConfig.cicdConfig,
+      flavorsConfig: moduleIdsToRemove.contains('flavors') ? null : forgeConfig.flavorsConfig,
     );
 
     // Step 1: Delete module-specific files
