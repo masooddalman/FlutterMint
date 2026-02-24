@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:flutterforge/src/config/forge_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/generator/file_writer.dart';
+import 'package:flutterforge/src/generator/platform_configurator.dart';
 import 'package:flutterforge/src/generator/pubspec_editor.dart';
 import 'package:flutterforge/src/generator/shared_file_composer.dart';
 import 'package:flutterforge/src/modules/module.dart';
@@ -51,17 +52,26 @@ class ModuleAdder {
     _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
     await _composer.compose(projectPath, projectConfig, allModules);
 
-    // Step 4: Run flutter pub get
-    _printStep(4, 'Resolving dependencies...');
+    // Step 4: Configure platform files (Android permissions)
+    if (newModuleIds.contains('api')) {
+      _printStep(4, 'Configuring platform files...');
+      await PlatformConfigurator.addAndroidPermissions(projectPath, [
+        'android.permission.INTERNET',
+        'android.permission.ACCESS_NETWORK_STATE',
+      ]);
+    }
+
+    // Step 5: Run flutter pub get
+    _printStep(5, 'Resolving dependencies...');
     await _runPubGet(projectPath);
 
-    // Step 5: Run gen-l10n if localization was just added
+    // Step 6: Run gen-l10n if localization was just added
     if (newModuleIds.contains('localization')) {
-      _printStep(5, 'Generating localization files...');
+      _printStep(6, 'Generating localization files...');
       await _runGenL10n(projectPath);
     }
 
-    // Step 6: Update .flutterforge.yaml
+    // Step 7: Update .flutterforge.yaml
     final updatedConfig = forgeConfig.withModules(newModuleIds);
     await updatedConfig.save(projectPath);
 
