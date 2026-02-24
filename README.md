@@ -94,6 +94,19 @@ This generates the complete feature stack and automatically:
 - Creates unit and widget tests (if testing module is installed)
 - Creates a screen-specific `widgets/` folder
 
+### Enable HTTP connections
+
+```bash
+# Enable HTTP (non-HTTPS) on both Android and iOS
+flutterforge enable-http
+
+# Disable HTTP and revert to HTTPS only
+flutterforge disable-http
+```
+
+- **Android:** adds/removes `android:usesCleartextTraffic="true"` in `AndroidManifest.xml`
+- **iOS:** adds/removes `NSAppTransportSecurity` with `NSAllowsArbitraryLoads` in `Info.plist`
+
 ### Configure CI/CD
 
 ```bash
@@ -117,15 +130,17 @@ Opens an interactive wizard to configure:
 | **locator** | No | GetIt service locator with auto-registration for all modules | `get_it ^8.0.0` |
 | **theming** | No | Light/dark Material 3 themes with `ThemeProvider` toggle | — |
 | **routing** | No | GoRouter with `RoutePaths` constants and `MaterialApp.router` integration | `go_router ^14.0.0` |
-| **api** | No | Dio HTTP client with interceptors and exception handling | `dio ^5.4.0` |
-| **ai** | No | Generic AI service template for LLM/ML integration | — |
+| **api** | No | Dio HTTP client with interceptors, exception handling, and auto-configured Android network permissions | `dio ^5.4.0` |
+| **ai** | No | Generic AI service template for LLM/ML integration (auto-includes API module) | — |
 | **localization** | No | ARB-based localization with English and Arabic starter files | `intl ^0.20.2` |
 | **startup** | No | Splash/initialization flow with startup service and viewmodel | — |
 | **toast** | No | Toast notifications via `ScaffoldMessenger` | — |
 | **testing** | No | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
 | **cicd** | No | GitHub Actions workflow with build, test, and deployment steps | — |
 
-Module dependencies are resolved automatically. For example, enabling `theming` auto-includes `mvvm`.
+Module dependencies are resolved automatically. For example, enabling `theming` auto-includes `mvvm`, and enabling `ai` auto-includes `api`.
+
+When the **API module** is included, `INTERNET` and `ACCESS_NETWORK_STATE` permissions are automatically added to `android/app/src/main/AndroidManifest.xml`.
 
 ## Generated Project Structure
 
@@ -254,8 +269,9 @@ cicd:
 3. **Pubspec editing** — module dependencies are injected into `pubspec.yaml`
 4. **File generation** — each module emits its files via `generateFiles()`
 5. **Shared file composition** — `main.dart`, `app.dart`, and `locator.dart` are composed by collecting imports, setup lines, provider declarations, and service registrations from all active modules
-6. **`flutter pub get`** — resolves the dependency tree
-7. **Config persistence** — `.flutterforge.yaml` records the project state
+6. **Platform configuration** — Android permissions are added to `AndroidManifest.xml` when the API module is included
+7. **`flutter pub get`** — resolves the dependency tree
+8. **Config persistence** — `.flutterforge.yaml` records the project state
 
 ### How Screen Generation Works
 
