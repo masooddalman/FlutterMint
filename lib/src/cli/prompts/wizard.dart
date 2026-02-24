@@ -1,4 +1,5 @@
 import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
+import 'package:flutterforge/src/config/flavors_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/modules/module_registry.dart';
 
@@ -53,11 +54,20 @@ class Wizard {
       }
     }
 
+    // If flavors was selected, run inline configuration
+    FlavorsConfig? flavorsConfig;
+    if (selectedModules.contains('flavors')) {
+      flavorsConfig = _configureFlavors();
+    }
+
     print('');
     print('Project: $appName');
     print('Organization: $org');
     print('Package: $org.$appName');
     print('Modules: ${selectedModules.join(", ")}');
+    if (flavorsConfig != null) {
+      print('Environments: ${flavorsConfig.environments.map((e) => e.name).join(", ")}');
+    }
     print('');
 
     final confirm = PromptUtils.askYesNo('Proceed with creation?', defaultValue: true);
@@ -70,6 +80,80 @@ class Wizard {
       appName: appName,
       org: org,
       selectedModules: selectedModules,
+      flavorsConfig: flavorsConfig,
+    );
+  }
+
+  FlavorsConfig _configureFlavors() {
+    print('');
+    print('  Configure environments:');
+    print('');
+
+    final envNamesInput = PromptUtils.askText(
+      '  Environment names (comma-separated)',
+      defaultValue: 'dev, staging, production',
+    );
+
+    final envNames = envNamesInput
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .where((s) => s.isNotEmpty && RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(s))
+        .toList();
+
+    if (envNames.isEmpty) {
+      print('  No valid environment names. Using defaults.');
+      return FlavorsConfig.defaults;
+    }
+
+    final environments = <EnvironmentConfig>[];
+    for (final name in envNames) {
+      print('');
+      print('  ── $name ──');
+      final apiUrl = PromptUtils.askText(
+        '    API base URL',
+        defaultValue: 'https://$name-api.example.com',
+      );
+      final appNameSuffix = PromptUtils.askText(
+        '    App name suffix (e.g. " Dev")',
+        defaultValue: name == envNames.last ? '' : ' ${name[0].toUpperCase()}${name.substring(1)}',
+      );
+      final appIdSuffix = PromptUtils.askText(
+        '    App ID suffix (e.g. ".dev")',
+        defaultValue: name == envNames.last ? '' : '.$name',
+      );
+
+      // Custom key-value pairs
+      final custom = <String, String>{};
+      final wantCustom = PromptUtils.askYesNo('    Add custom config keys?');
+      if (wantCustom) {
+        while (true) {
+          final key = PromptUtils.askText(
+            '      Key (or "done" to finish)',
+          );
+          if (key.toLowerCase() == 'done') break;
+          final value = PromptUtils.askText('      Value');
+          custom[key] = value;
+        }
+      }
+
+      environments.add(EnvironmentConfig(
+        name: name,
+        apiBaseUrl: apiUrl,
+        appNameSuffix: appNameSuffix,
+        appIdSuffix: appIdSuffix,
+        custom: custom,
+      ));
+    }
+
+    // Default environment
+    final defaultEnv = PromptUtils.askText(
+      '  Default environment (used in main.dart)',
+      defaultValue: envNames.last,
+    );
+
+    return FlavorsConfig(
+      environments: environments,
+      defaultEnvironment: envNames.contains(defaultEnv) ? defaultEnv : envNames.last,
     );
   }
 }
