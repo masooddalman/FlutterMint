@@ -58,13 +58,25 @@ class ProjectGenerator {
     _printStep(4, 'Composing application files...');
     await _composer.compose(projectPath, config, modules);
 
-    // Step 7: Configure platform files (Android permissions)
-    if (config.hasModule('api')) {
+    // Step 7: Configure platform files
+    if (config.hasModule('api') || config.hasModule('flavors')) {
       _printStep(5, 'Configuring platform files...');
-      await PlatformConfigurator.addAndroidPermissions(projectPath, [
-        'android.permission.INTERNET',
-        'android.permission.ACCESS_NETWORK_STATE',
-      ]);
+      if (config.hasModule('api')) {
+        await PlatformConfigurator.addAndroidPermissions(projectPath, [
+          'android.permission.INTERNET',
+          'android.permission.ACCESS_NETWORK_STATE',
+        ]);
+      }
+      if (config.hasModule('flavors')) {
+        await PlatformConfigurator.configureFlavorsAndroid(
+          projectPath,
+          config.appName,
+        );
+        await PlatformConfigurator.configureFlavorsIos(
+          projectPath,
+          config.appName,
+        );
+      }
     }
 
     // Step 8: Generate analysis_options.yaml
