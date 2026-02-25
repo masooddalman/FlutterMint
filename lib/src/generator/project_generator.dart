@@ -36,9 +36,12 @@ class ProjectGenerator {
 
     final stopwatch = Stopwatch()..start();
 
+    // Step 0: Enable desktop/web platform support if needed
+    await _enablePlatformSupport(config.platforms);
+
     // Step 1: Run flutter create
     _printStep(1, 'Creating Flutter project...');
-    await _runFlutterCreate(config.appName, config.org);
+    await _runFlutterCreate(config.appName, config.org, config.platforms);
 
     // Step 2: Resolve and order selected modules
     final modules = ModuleRegistry.resolveModules(config.selectedModules);
@@ -98,6 +101,7 @@ class ProjectGenerator {
       org: config.org,
       modules: config.selectedModules,
       flavorsConfig: config.flavorsConfig,
+      platforms: config.platforms,
     );
     await forgeConfig.save(projectPath);
 
@@ -135,10 +139,25 @@ class ProjectGenerator {
     }
   }
 
-  Future<void> _runFlutterCreate(String appName, String org) async {
+  Future<void> _enablePlatformSupport(List<String> platforms) async {
+    const flagMap = {
+      'windows': 'windows-desktop',
+      'macos': 'macos-desktop',
+      'linux': 'linux-desktop',
+      'web': 'web',
+    };
+    for (final id in platforms) {
+      final flag = flagMap[id];
+      if (flag != null) {
+        await Process.run('flutter', ['config', '--enable-$flag'], runInShell: true);
+      }
+    }
+  }
+
+  Future<void> _runFlutterCreate(String appName, String org, List<String> platforms) async {
     final result = await Process.run(
       'flutter',
-      ['create', '--org', org, appName],
+      ['create', '--platforms', platforms.join(','), '--org', org, appName],
       runInShell: true,
     );
     if (result.exitCode != 0) {
