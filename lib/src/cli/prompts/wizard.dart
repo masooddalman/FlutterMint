@@ -1,5 +1,6 @@
 import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
 import 'package:flutterforge/src/config/flavors_config.dart';
+import 'package:flutterforge/src/config/platform_config.dart';
 import 'package:flutterforge/src/config/project_config.dart';
 import 'package:flutterforge/src/modules/module_registry.dart';
 
@@ -54,6 +55,28 @@ class Wizard {
       }
     }
 
+    // Platform selection
+    print('');
+    print('Platforms (Android and iOS are included by default):');
+    print('');
+
+    final selectedPlatforms = <String>[...PlatformRegistry.defaultPlatformIds];
+    final optionalPlatforms = PlatformRegistry.optionalPlatforms;
+
+    for (var i = 0; i < optionalPlatforms.length; i++) {
+      final platform = optionalPlatforms[i];
+      PromptUtils.printStep(
+        i + 1,
+        optionalPlatforms.length,
+        platform.displayName,
+      );
+      final include =
+          PromptUtils.askYesNo('  Enable ${platform.displayName}?');
+      if (include) {
+        selectedPlatforms.add(platform.id);
+      }
+    }
+
     // If flavors was selected, run inline configuration
     FlavorsConfig? flavorsConfig;
     if (selectedModules.contains('flavors')) {
@@ -64,6 +87,7 @@ class Wizard {
     print('Project: $appName');
     print('Organization: $org');
     print('Package: $org.$appName');
+    print('Platforms: ${selectedPlatforms.join(", ")}');
     print('Modules: ${selectedModules.join(", ")}');
     if (flavorsConfig != null) {
       print('Environments: ${flavorsConfig.environments.map((e) => e.name).join(", ")}');
@@ -81,6 +105,7 @@ class Wizard {
       org: org,
       selectedModules: selectedModules,
       flavorsConfig: flavorsConfig,
+      platforms: selectedPlatforms,
     );
   }
 

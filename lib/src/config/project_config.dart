@@ -8,6 +8,7 @@ class ProjectConfig {
     this.org = 'com.example',
     this.cicdConfig,
     this.flavorsConfig,
+    this.platforms = const ['android', 'ios'],
   });
 
   final String appName;
@@ -15,6 +16,7 @@ class ProjectConfig {
   final List<String> selectedModules;
   final CicdConfig? cicdConfig;
   final FlavorsConfig? flavorsConfig;
+  final List<String> platforms;
 
   /// Full package identifier (e.g. com.mycompany.my_app).
   String get packageId => '$org.$appName';

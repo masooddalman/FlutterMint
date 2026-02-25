@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 
 import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
 import 'package:flutterforge/src/config/forge_config.dart';
+import 'package:flutterforge/src/config/platform_config.dart';
 
 class BuildCommand extends Command<void> {
   @override
@@ -13,12 +14,6 @@ class BuildCommand extends Command<void> {
   @override
   final String description =
       'Build the app with mode, flavor, and platform selection.';
-
-  static const _platforms = [
-    ('APK', 'apk'),
-    ('App Bundle (AAB)', 'appbundle'),
-    ('iOS (.app)', 'ios'),
-  ];
 
   @override
   Future<void> run() async {
@@ -32,6 +27,22 @@ class BuildCommand extends Command<void> {
       stderr.writeln(
         'Make sure you are inside a project created with "flutterforge create".',
       );
+      return;
+    }
+
+    // Build available build targets from enabled platforms
+    final buildTargets = <(String label, String subcommand)>[];
+    for (final platformId in forgeConfig.platforms) {
+      final info = PlatformRegistry.byId(platformId);
+      if (info == null) continue;
+      for (final target in info.buildTargets) {
+        buildTargets.add(target);
+      }
+    }
+
+    if (buildTargets.isEmpty) {
+      stderr.writeln('Error: No platforms are enabled in this project.');
+      stderr.writeln('Add platforms with: flutterforge platform add');
       return;
     }
 
@@ -94,8 +105,8 @@ class BuildCommand extends Command<void> {
     // 3. Platform selection
     print('');
     print('  Select platform:');
-    for (var i = 0; i < _platforms.length; i++) {
-      print('    ${i + 1}) ${_platforms[i].$1}');
+    for (var i = 0; i < buildTargets.length; i++) {
+      print('    ${i + 1}) ${buildTargets[i].$1}');
     }
     print('');
 
@@ -104,10 +115,11 @@ class BuildCommand extends Command<void> {
     final selectedPlatformIdx =
         (platformIdx != null &&
                 platformIdx >= 1 &&
-                platformIdx <= _platforms.length)
+                platformIdx <= buildTargets.length)
             ? platformIdx - 1
             : 0;
-    final (platformLabel, platformSubcommand) = _platforms[selectedPlatformIdx];
+    final (platformLabel, platformSubcommand) =
+        buildTargets[selectedPlatformIdx];
     print('  Using platform: $platformLabel');
 
     final isAndroid =
@@ -174,7 +186,7 @@ class BuildCommand extends Command<void> {
       flutterArgs.add('--dart-define-from-file=config/$selectedEnv.json');
     }
 
-    // 6. Execute
+    // 7. Execute
     print('');
     print('  Running: flutter ${flutterArgs.join(' ')}');
     print('');
@@ -189,7 +201,7 @@ class BuildCommand extends Command<void> {
 
     final exitCode = await process.exitCode;
 
-    // 7. Post-build: rename output and print result
+    // 8. Post-build output
     if (exitCode == 0) {
       final version = _readVersion(projectPath);
 
@@ -205,7 +217,32 @@ class BuildCommand extends Command<void> {
           '    3. Product → Run (or Product → Archive for distribution)',
         );
         print('');
+      } else if (platformSubcommand == 'web') {
+        print('');
+        print('  Build complete!');
+        print('');
+        print('  Output: build/web/');
+        print('');
+      } else if (platformSubcommand == 'macos') {
+        print('');
+        print('  Build complete!');
+        print('');
+        print('  Output: build/macos/Build/Products/${isDebug ? 'Debug' : 'Release'}/');
+        print('');
+      } else if (platformSubcommand == 'windows') {
+        print('');
+        print('  Build complete!');
+        print('');
+        print('  Output: build/windows/x64/runner/${isDebug ? 'Debug' : 'Release'}/');
+        print('');
+      } else if (platformSubcommand == 'linux') {
+        print('');
+        print('  Build complete!');
+        print('');
+        print('  Output: build/linux/x64/$mode/bundle/');
+        print('');
       } else {
+        // Android APK / AAB — rename output
         await _renameOutput(
           projectPath,
           forgeConfig.appName,

@@ -8,6 +8,7 @@ import 'package:flutterforge/src/cli/commands/config_command.dart';
 import 'package:flutterforge/src/cli/commands/create_command.dart';
 import 'package:flutterforge/src/cli/commands/disable_http_command.dart';
 import 'package:flutterforge/src/cli/commands/enable_http_command.dart';
+import 'package:flutterforge/src/cli/commands/platform_command.dart';
 import 'package:flutterforge/src/cli/commands/remove_command.dart';
 import 'package:flutterforge/src/cli/commands/run_command.dart';
 import 'package:flutterforge/src/cli/logo.dart';
@@ -28,6 +29,7 @@ class FlutterForgeRunner extends CommandRunner<void> {
     addCommand(DisableHttpCommand());
     addCommand(RunCommand());
     addCommand(BuildCommand());
+    addCommand(PlatformCommand());
     argParser.addFlag(
       'version',
       abbr: 'v',
