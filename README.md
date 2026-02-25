@@ -27,6 +27,7 @@ Beyond initial scaffolding, FlutterForge manages the project lifecycle. You can 
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
 - **Flavors / Environments** — compile-time environment config via `--dart-define-from-file` with per-environment JSON files and interactive config wizard
 - **Run & Build commands** — `flutterforge run` and `flutterforge build` with interactive flavor, device, platform, and build mode selection
+- **Multi-platform** — Android and iOS by default, with opt-in support for Web, macOS, Windows, and Linux
 - **Clean architecture** — domain/data/feature layers with repositories, use cases, and view models
 
 ## Installation
@@ -65,6 +66,24 @@ The wizard asks for:
 1. **App name** — lowercase with underscores (e.g. `my_app`)
 2. **Organization** — reverse domain notation (e.g. `com.mycompany`)
 3. **Optional modules** — yes/no for each available module
+4. **Platforms** — Android and iOS included by default; optionally enable Web, macOS, Windows, Linux
+
+Quick create (`flutterforge create my_app`) uses default modules and platforms (Android + iOS).
+
+### Manage platforms
+
+```bash
+# Show enabled and available platforms
+flutterforge platform
+
+# Interactively add platforms
+flutterforge platform add
+
+# Add specific platforms directly
+flutterforge platform add web macos
+```
+
+Adding a platform runs `flutter create --platforms <platform> .` under the hood and updates `.flutterforge.yaml`.
 
 ### Manage modules
 
@@ -287,6 +306,10 @@ Project configuration is stored in `.flutterforge.yaml`:
 ```yaml
 app_name: my_app
 org: com.mycompany
+platforms:
+  - android
+  - ios
+  - web
 modules:
   - mvvm
   - logging
@@ -348,7 +371,7 @@ flavors:
 
 ### How Generation Works
 
-1. **`flutter create --org <org> <app_name>`** — creates the base Flutter project
+1. **`flutter create --platforms <platforms> --org <org> <app_name>`** — creates the base Flutter project with selected platforms
 2. **Module resolution** — topological sort resolves dependency order
 3. **Pubspec editing** — module dependencies are injected into `pubspec.yaml`
 4. **File generation** — each module emits its files via `generateFiles()`
@@ -383,5 +406,5 @@ flavors:
 - [ ] `flutterforge doctor` command to validate project health
 - [ ] Riverpod and Bloc as alternative state management options
 - [ ] Supabase and Firebase backend module integration
-- [ ] Windows, macOS, and Linux desktop platform support
+- [x] Windows, macOS, and Linux desktop platform support
 - [ ] Plugin for VS Code and Android Studio
