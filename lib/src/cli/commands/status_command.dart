@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:flutterforge/src/config/forge_config.dart';
+import 'package:flutterforge/src/config/platform_config.dart';
 import 'package:flutterforge/src/modules/module_registry.dart';
 
 class StatusCommand extends Command<void> {
@@ -61,6 +62,33 @@ class StatusCommand extends Command<void> {
       }
       print('');
       print('Add a module with: flutterforge add <module_id>');
+    }
+
+    // Enabled platforms
+    print('');
+    print('Platforms:');
+    for (final id in config.platforms) {
+      final info = PlatformRegistry.byId(id);
+      final label = info?.displayName ?? id;
+      final tag =
+          PlatformRegistry.defaultPlatformIds.contains(id)
+              ? ' (default)'
+              : '';
+      print('  + $label$tag');
+    }
+
+    final availablePlatforms =
+        PlatformRegistry.allPlatforms
+            .where((p) => !config.platforms.contains(p.id))
+            .toList();
+    if (availablePlatforms.isNotEmpty) {
+      print('');
+      print('Available platforms (not enabled):');
+      for (final p in availablePlatforms) {
+        print('  - ${p.id}: ${p.displayName}');
+      }
+      print('');
+      print('Add a platform with: flutterforge platform add <platform>');
     }
 
     print('');
