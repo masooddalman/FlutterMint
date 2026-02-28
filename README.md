@@ -48,6 +48,12 @@ fluttermint create
 
 **Requirements:** Dart SDK ^3.0.0, Flutter SDK on PATH.
 
+### VS Code Extension
+
+FlutterMint also has a VS Code extension that provides a UI for all CLI commands.
+
+Install it from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=masoud-dalman.fluttermint) or search for **FlutterMint** in the Extensions tab.
+
 ## Usage
 
 ### Create a project
@@ -405,4 +411,5 @@ flavors:
 - [ ] Riverpod and Bloc as alternative state management options
 - [ ] Supabase and Firebase backend module integration
 - [x] Windows, macOS, and Linux desktop platform support
-- [ ] Plugin for VS Code and Android Studio
+- [x] Plugin for VS Code
+- [ ] Plugin for Android Studio

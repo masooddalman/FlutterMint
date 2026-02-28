@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Add example documentation.
+- Update installation instructions for pub.dev.
+
 ## 0.1.0
 
 - Initial release of FlutterMint CLI.
