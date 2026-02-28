@@ -5,11 +5,12 @@
 <p align="center">
   <img src="assets/banner.png" alt="FlutterMint Banner" width="400" />
 </p>
-  <img src="assets/flutterForge.png" alt="FlutterMint"
+  <img src="assets/fluttermint.jpg" alt="FlutterMint"
   width="400">
 <p align="center">
 
 </p>
+
 ## What is FlutterMint?
 
 FlutterMint scaffolds Flutter projects with a clean, opinionated architecture out of the box. Instead of spending hours wiring up state management, dependency injection, routing, theming, API layers, and CI/CD pipelines, you run a single command and get a project that's ready for feature development.
