@@ -8,7 +8,7 @@ import 'package:fluttermint/src/config/constants.dart';
 final bool _ansi = stdout.supportsAnsiEscapes;
 
 String get _cyan => _ansi ? '\x1B[96m' : '';
-String get _blue => _ansi ? '\x1B[34m' : '';
+String get _mintGreen => _ansi ? '\x1B[38;2;152;251;152m' : '';
 String get _bold => _ansi ? '\x1B[1m' : '';
 String get _dim => _ansi ? '\x1B[2m' : '';
 String get _reset => _ansi ? '\x1B[0m' : '';
@@ -42,12 +42,12 @@ void printBanner(Map<String, Command<void>> commands) {
     print('$_cyan$line$_reset');
   }
   for (final line in _mintArt) {
-    print('$_blue$line$_reset');
+    print('$_mintGreen$line$_reset');
   }
 
   // Version + description
   print('');
-  print(' $_bold${Constants.toolName}$_reset  $_dim v${Constants.version}$_reset');
+  print(' 🍃 $_bold${Constants.toolName}$_reset  $_dim v${Constants.version}$_reset');
   print(' $_dim${Constants.description}$_reset');
 
   // Commands table
