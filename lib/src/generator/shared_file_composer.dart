@@ -1,11 +1,11 @@
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/generator/file_writer.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/templates/core/app_template.dart';
-import 'package:flutterforge/src/templates/core/locator_template.dart';
-import 'package:flutterforge/src/templates/core/main_template.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/generator/file_writer.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/templates/core/app_template.dart';
+import 'package:fluttermint/src/templates/core/locator_template.dart';
+import 'package:fluttermint/src/templates/core/main_template.dart';
 
 class SharedFileComposer {
   final FileWriter _fileWriter = FileWriter();

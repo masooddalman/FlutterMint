@@ -2,13 +2,13 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/generator/platform_configurator.dart';
-import 'package:flutterforge/src/generator/pubspec_editor.dart';
-import 'package:flutterforge/src/generator/shared_file_composer.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/modules/module_registry.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/generator/platform_configurator.dart';
+import 'package:fluttermint/src/generator/pubspec_editor.dart';
+import 'package:fluttermint/src/generator/shared_file_composer.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/modules/module_registry.dart';
 
 class ModuleRemover {
   final PubspecEditor _pubspecEditor = PubspecEditor();
@@ -73,7 +73,7 @@ class ModuleRemover {
     _printStep(4, 'Resolving dependencies...');
     await _runPubGet(projectPath);
 
-    // Step 6: Update .flutterforge.yaml
+    // Step 6: Update .fluttermint.yaml
     final updatedConfig = forgeConfig.withoutModules(moduleIdsToRemove);
     await updatedConfig.save(projectPath);
 

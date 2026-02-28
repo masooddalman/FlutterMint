@@ -200,7 +200,7 @@ class PlatformConfigurator {
 
   /// Marker comment used to identify the dart-defines decoding block in
   /// build.gradle so it can be found (and removed) later.
-  static const _gradleMarker = '// -- FlutterForge flavors --';
+  static const _gradleMarker = '// -- FlutterMint flavors --';
 
   /// Configures Android native files for flavor support.
   ///
@@ -410,7 +410,7 @@ $_gradleMarker
       final insertPos = dcMatch.end;
       final flavorLines = '''
 
-        // FlutterForge: apply flavor suffixes from dart-defines
+        // FlutterMint: apply flavor suffixes from dart-defines
         def idSuffix = dartDefines['APP_ID_SUFFIX'] ?: ''
         if (idSuffix) {
             applicationIdSuffix idSuffix
@@ -473,7 +473,7 @@ $_gradleMarker
       final insertPos = dcMatch.end;
       final flavorLines = '''
 
-        // FlutterForge: apply flavor suffixes from dart-defines
+        // FlutterMint: apply flavor suffixes from dart-defines
         val idSuffix = dartDefines["APP_ID_SUFFIX"] ?: ""
         if (idSuffix.isNotEmpty()) {
             applicationIdSuffix = idSuffix
@@ -515,7 +515,7 @@ $_gradleMarker
     // Remove the defaultConfig flavor lines (both Groovy and Kotlin patterns)
     content = content.replaceFirst(
       RegExp(
-        r"\n\s*// FlutterForge: apply flavor suffixes from dart-defines\n"
+        r"\n\s*// FlutterMint: apply flavor suffixes from dart-defines\n"
         r"[\s\S]*?"
         r"(?:resValue[^\n]*\n)",
       ),

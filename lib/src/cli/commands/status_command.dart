@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/config/platform_config.dart';
-import 'package:flutterforge/src/modules/module_registry.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/config/platform_config.dart';
+import 'package:fluttermint/src/modules/module_registry.dart';
 
 class StatusCommand extends Command<void> {
   @override
@@ -12,7 +12,7 @@ class StatusCommand extends Command<void> {
 
   @override
   final String description =
-      'Show which modules are installed in the current FlutterForge project.';
+      'Show which modules are installed in the current FlutterMint project.';
 
   @override
   Future<void> run() async {
@@ -21,16 +21,16 @@ class StatusCommand extends Command<void> {
     final config = ForgeConfig.load(projectPath);
     if (config == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }
 
     print('');
-    print('FlutterForge Project: ${config.appName}');
+    print('FlutterMint Project: ${config.appName}');
     print('');
 
     // Installed modules
@@ -61,7 +61,7 @@ class StatusCommand extends Command<void> {
         print('  - ${module.id}: ${module.displayName}$deps');
       }
       print('');
-      print('Add a module with: flutterforge add <module_id>');
+      print('Add a module with: fluttermint add <module_id>');
     }
 
     // Enabled platforms
@@ -88,7 +88,7 @@ class StatusCommand extends Command<void> {
         print('  - ${p.id}: ${p.displayName}');
       }
       print('');
-      print('Add a platform with: flutterforge platform add <platform>');
+      print('Add a platform with: fluttermint platform add <platform>');
     }
 
     print('');

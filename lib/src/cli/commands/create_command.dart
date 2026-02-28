@@ -1,9 +1,9 @@
 import 'package:args/command_runner.dart';
 
-import 'package:flutterforge/src/cli/prompts/wizard.dart';
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/generator/project_generator.dart';
-import 'package:flutterforge/src/modules/module_registry.dart';
+import 'package:fluttermint/src/cli/prompts/wizard.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/generator/project_generator.dart';
+import 'package:fluttermint/src/modules/module_registry.dart';
 
 class CreateCommand extends Command<void> {
   @override
@@ -12,8 +12,8 @@ class CreateCommand extends Command<void> {
   @override
   final String description =
       'Create a new Flutter project with pre-configured architecture.\n'
-      'Usage: flutterforge create <app_name>   — quick create with defaults\n'
-      '       flutterforge create              — interactive wizard';
+      'Usage: fluttermint create <app_name>   — quick create with defaults\n'
+      '       fluttermint create              — interactive wizard';
 
   @override
   Future<void> run() async {

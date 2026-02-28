@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/config/platform_config.dart';
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/config/platform_config.dart';
 
 class PlatformCommand extends Command<void> {
   @override
@@ -13,11 +13,11 @@ class PlatformCommand extends Command<void> {
 
   @override
   final String description =
-      'Manage platforms in an existing FlutterForge project.\n'
-      'Usage: flutterforge platform              — show enabled platforms\n'
-      '       flutterforge platform add          — interactively add platforms\n'
-      '       flutterforge platform add web macos — add specific platforms\n'
-      '       flutterforge platform remove       — interactively remove platforms';
+      'Manage platforms in an existing FlutterMint project.\n'
+      'Usage: fluttermint platform              — show enabled platforms\n'
+      '       fluttermint platform add          — interactively add platforms\n'
+      '       fluttermint platform add web macos — add specific platforms\n'
+      '       fluttermint platform remove       — interactively remove platforms';
 
   @override
   Future<void> run() async {
@@ -26,10 +26,10 @@ class PlatformCommand extends Command<void> {
     final forgeConfig = ForgeConfig.load(projectPath);
     if (forgeConfig == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }
@@ -77,7 +77,7 @@ class PlatformCommand extends Command<void> {
         print('  - ${p.id}: ${p.displayName}');
       }
       print('');
-      print('Add with: flutterforge platform add <platform>');
+      print('Add with: fluttermint platform add <platform>');
     }
     print('');
   }

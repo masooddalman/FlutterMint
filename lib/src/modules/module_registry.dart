@@ -1,17 +1,17 @@
-import 'package:flutterforge/src/modules/ai_module.dart';
-import 'package:flutterforge/src/modules/api_module.dart';
-import 'package:flutterforge/src/modules/cicd_module.dart';
-import 'package:flutterforge/src/modules/flavors_module.dart';
-import 'package:flutterforge/src/modules/localization_module.dart';
-import 'package:flutterforge/src/modules/locator_module.dart';
-import 'package:flutterforge/src/modules/logging_module.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/modules/mvvm_module.dart';
-import 'package:flutterforge/src/modules/routing_module.dart';
-import 'package:flutterforge/src/modules/startup_module.dart';
-import 'package:flutterforge/src/modules/testing_module.dart';
-import 'package:flutterforge/src/modules/theming_module.dart';
-import 'package:flutterforge/src/modules/toast_module.dart';
+import 'package:fluttermint/src/modules/ai_module.dart';
+import 'package:fluttermint/src/modules/api_module.dart';
+import 'package:fluttermint/src/modules/cicd_module.dart';
+import 'package:fluttermint/src/modules/flavors_module.dart';
+import 'package:fluttermint/src/modules/localization_module.dart';
+import 'package:fluttermint/src/modules/locator_module.dart';
+import 'package:fluttermint/src/modules/logging_module.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/modules/mvvm_module.dart';
+import 'package:fluttermint/src/modules/routing_module.dart';
+import 'package:fluttermint/src/modules/startup_module.dart';
+import 'package:fluttermint/src/modules/testing_module.dart';
+import 'package:fluttermint/src/modules/theming_module.dart';
+import 'package:fluttermint/src/modules/toast_module.dart';
 
 class ModuleRegistry {
   ModuleRegistry._();

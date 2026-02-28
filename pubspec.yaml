@@ -1,4 +1,4 @@
-name: flutterforge
+name: fluttermint
 description: A CLI tool to generate Flutter projects with pre-configured architecture and modules.
 version: 0.1.0
 
@@ -6,7 +6,7 @@ environment:
   sdk: ^3.0.0
 
 executables:
-  flutterforge: flutterforge
+  fluttermint: fluttermint
 
 dependencies:
   args: ^2.6.0

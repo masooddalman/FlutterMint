@@ -1,12 +1,12 @@
-import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
-import 'package:flutterforge/src/config/flavors_config.dart';
-import 'package:flutterforge/src/config/platform_config.dart';
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/modules/module_registry.dart';
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/flavors_config.dart';
+import 'package:fluttermint/src/config/platform_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/modules/module_registry.dart';
 
 class Wizard {
   Future<ProjectConfig> run(String? providedName) async {
-    PromptUtils.printHeader('FlutterForge Project Wizard');
+    PromptUtils.printHeader('FlutterMint Project Wizard');
 
     // Ask for app name if not provided
     final appName = providedName ??

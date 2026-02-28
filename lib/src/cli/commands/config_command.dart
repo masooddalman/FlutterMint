@@ -3,16 +3,16 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
-import 'package:flutterforge/src/config/cicd_config.dart';
-import 'package:flutterforge/src/config/flavors_config.dart';
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/generator/file_writer.dart';
-import 'package:flutterforge/src/generator/module_adder.dart';
-import 'package:flutterforge/src/generator/platform_configurator.dart';
-import 'package:flutterforge/src/modules/module_registry.dart';
-import 'package:flutterforge/src/templates/cicd/github_actions_template.dart';
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/cicd_config.dart';
+import 'package:fluttermint/src/config/flavors_config.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/generator/file_writer.dart';
+import 'package:fluttermint/src/generator/module_adder.dart';
+import 'package:fluttermint/src/generator/platform_configurator.dart';
+import 'package:fluttermint/src/modules/module_registry.dart';
+import 'package:fluttermint/src/templates/cicd/github_actions_template.dart';
 
 class ConfigCommand extends Command<void> {
   @override
@@ -26,7 +26,7 @@ class ConfigCommand extends Command<void> {
     final rest = argResults?.rest ?? [];
 
     if (rest.isEmpty) {
-      stderr.writeln('Usage: flutterforge config <module>');
+      stderr.writeln('Usage: fluttermint config <module>');
       stderr.writeln('Available: cicd, flavors');
       return;
     }
@@ -50,10 +50,10 @@ class ConfigCommand extends Command<void> {
     var forgeConfig = ForgeConfig.load(projectPath);
     if (forgeConfig == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }
@@ -151,7 +151,7 @@ class ConfigCommand extends Command<void> {
       print('  $green   Uploads test coverage report to Codecov after running tests$reset');
     } else {
       print('  ${red}X$reset 3. Code Coverage');
-      print('  $red   (Requires testing module — run "flutterforge add testing" first)$reset');
+      print('  $red   (Requires testing module — run "fluttermint add testing" first)$reset');
     }
     print('');
     print(stepLabel(4, 'Concurrency Control'));
@@ -444,7 +444,7 @@ class ConfigCommand extends Command<void> {
 
     print('');
     print('CI/CD configuration saved!');
-    print('  Updated: .flutterforge.yaml');
+    print('  Updated: .fluttermint.yaml');
     print('  Updated: .github/workflows/ci.yml');
     if (createdWhatsnew) {
       print('  Created: whatsnew/whatsnew-en-US');
@@ -505,10 +505,10 @@ class ConfigCommand extends Command<void> {
     var forgeConfig = ForgeConfig.load(projectPath);
     if (forgeConfig == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }
@@ -684,7 +684,7 @@ class ConfigCommand extends Command<void> {
   ) {
     final envNames = existing.environments.map((e) => e.name).toList();
     if (envNames.length <= 1) {
-      print('  Cannot remove the only environment. Use "flutterforge remove flavors" instead.');
+      print('  Cannot remove the only environment. Use "fluttermint remove flavors" instead.');
       return existing;
     }
 
@@ -921,7 +921,7 @@ class ConfigCommand extends Command<void> {
 
     print('');
     print('Flavors configuration saved!');
-    print('  Updated: .flutterforge.yaml');
+    print('  Updated: .fluttermint.yaml');
     print('  Updated: lib/core/config/env_config.dart');
     for (final env in flavorsConfig.environments) {
       print('  Updated: config/${env.name}.json');

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:flutterforge/src/config/constants.dart';
+import 'package:fluttermint/src/config/constants.dart';
 
 // ANSI color codes — degrade to empty strings when not supported.
 final bool _ansi = stdout.supportsAnsiEscapes;
@@ -23,25 +23,25 @@ const _flutterArt = [
   r' ╚═╝     ╚══════╝ ╚═════╝    ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝',
 ];
 
-/// The "Forge" half of the logo in ANSI Shadow font.
-const _forgeArt = [
-  r' ███████╗ ██████╗ ██████╗  ██████╗ ███████╗',
-  r' ██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝',
-  r' █████╗  ██║   ██║██████╔╝██║  ███╗█████╗  ',
-  r' ██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  ',
-  r' ██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗',
-  r' ╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝',
+/// The "Mint" half of the logo in ANSI Shadow font.
+const _mintArt = [
+  r' ███╗   ███╗██╗███╗   ██╗████████╗',
+  r' ████╗ ████║██║████╗  ██║╚══██╔══╝',
+  r' ██╔████╔██║██║██╔██╗ ██║   ██║   ',
+  r' ██║╚██╔╝██║██║██║╚██╗██║   ██║   ',
+  r' ██║ ╚═╝ ██║██║██║ ╚████║   ██║   ',
+  r' ╚═╝     ╚═╝╚═╝╚═╝  ╚═══╝   ╚═╝   ',
 ];
 
-/// Prints the colored FlutterForge logo, version,
+/// Prints the colored FlutterMint logo, version,
 /// and a styled list of available commands.
 void printBanner(Map<String, Command<void>> commands) {
-  // Logo — "Flutter" in bright cyan, "Forge" in blue
+  // Logo — "Flutter" in bright cyan, "Mint" in blue
   print('');
   for (final line in _flutterArt) {
     print('$_cyan$line$_reset');
   }
-  for (final line in _forgeArt) {
+  for (final line in _mintArt) {
     print('$_blue$line$_reset');
   }
 

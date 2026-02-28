@@ -1,7 +1,7 @@
-import 'package:flutterforge/src/config/flavors_config.dart';
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/templates/flavors/env_config_template.dart';
+import 'package:fluttermint/src/config/flavors_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/templates/flavors/env_config_template.dart';
 
 class FlavorsModule extends Module {
   @override

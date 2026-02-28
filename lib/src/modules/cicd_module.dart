@@ -1,6 +1,6 @@
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/templates/cicd/github_actions_template.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/templates/cicd/github_actions_template.dart';
 
 class CicdModule extends Module {
   @override

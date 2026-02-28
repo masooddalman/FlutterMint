@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutterforge/src/config/flavors_config.dart';
+import 'package:fluttermint/src/config/flavors_config.dart';
 
 class EnvConfigTemplate {
   EnvConfigTemplate._();

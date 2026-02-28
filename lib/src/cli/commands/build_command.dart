@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/config/platform_config.dart';
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/config/platform_config.dart';
 
 class BuildCommand extends Command<void> {
   @override
@@ -22,10 +22,10 @@ class BuildCommand extends Command<void> {
     final forgeConfig = ForgeConfig.load(projectPath);
     if (forgeConfig == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }
@@ -42,7 +42,7 @@ class BuildCommand extends Command<void> {
 
     if (buildTargets.isEmpty) {
       stderr.writeln('Error: No platforms are enabled in this project.');
-      stderr.writeln('Add platforms with: flutterforge platform add');
+      stderr.writeln('Add platforms with: fluttermint platform add');
       return;
     }
 

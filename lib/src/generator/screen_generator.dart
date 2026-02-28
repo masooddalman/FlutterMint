@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/generator/file_writer.dart';
-import 'package:flutterforge/src/templates/mvvm/screen_template.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/generator/file_writer.dart';
+import 'package:fluttermint/src/templates/mvvm/screen_template.dart';
 
 class ScreenGenerator {
   final FileWriter _fileWriter = FileWriter();

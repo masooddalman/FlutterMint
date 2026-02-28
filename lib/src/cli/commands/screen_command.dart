@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/generator/screen_generator.dart';
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/generator/screen_generator.dart';
 
 class ScreenCommand extends Command<void> {
   ScreenCommand() {
@@ -20,8 +20,8 @@ class ScreenCommand extends Command<void> {
 
   @override
   final String description =
-      'Add a new screen to an existing FlutterForge project.\n'
-      'Usage: flutterforge screen <screen_name> [--param name:Type]';
+      'Add a new screen to an existing FlutterMint project.\n'
+      'Usage: fluttermint screen <screen_name> [--param name:Type]';
 
   @override
   Future<void> run() async {
@@ -31,10 +31,10 @@ class ScreenCommand extends Command<void> {
     final forgeConfig = ForgeConfig.load(projectPath);
     if (forgeConfig == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }
@@ -42,7 +42,7 @@ class ScreenCommand extends Command<void> {
     // Check MVVM module is installed
     if (!forgeConfig.modules.contains('mvvm')) {
       stderr.writeln('Error: The MVVM module is required to add screens.');
-      stderr.writeln('Run "flutterforge add mvvm" first.');
+      stderr.writeln('Run "fluttermint add mvvm" first.');
       return;
     }
 

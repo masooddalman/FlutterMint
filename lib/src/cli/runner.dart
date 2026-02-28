@@ -2,22 +2,22 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:flutterforge/src/cli/commands/add_command.dart';
-import 'package:flutterforge/src/cli/commands/build_command.dart';
-import 'package:flutterforge/src/cli/commands/config_command.dart';
-import 'package:flutterforge/src/cli/commands/create_command.dart';
-import 'package:flutterforge/src/cli/commands/disable_http_command.dart';
-import 'package:flutterforge/src/cli/commands/enable_http_command.dart';
-import 'package:flutterforge/src/cli/commands/platform_command.dart';
-import 'package:flutterforge/src/cli/commands/remove_command.dart';
-import 'package:flutterforge/src/cli/commands/run_command.dart';
-import 'package:flutterforge/src/cli/logo.dart';
-import 'package:flutterforge/src/cli/commands/screen_command.dart';
-import 'package:flutterforge/src/cli/commands/status_command.dart';
-import 'package:flutterforge/src/config/constants.dart';
+import 'package:fluttermint/src/cli/commands/add_command.dart';
+import 'package:fluttermint/src/cli/commands/build_command.dart';
+import 'package:fluttermint/src/cli/commands/config_command.dart';
+import 'package:fluttermint/src/cli/commands/create_command.dart';
+import 'package:fluttermint/src/cli/commands/disable_http_command.dart';
+import 'package:fluttermint/src/cli/commands/enable_http_command.dart';
+import 'package:fluttermint/src/cli/commands/platform_command.dart';
+import 'package:fluttermint/src/cli/commands/remove_command.dart';
+import 'package:fluttermint/src/cli/commands/run_command.dart';
+import 'package:fluttermint/src/cli/logo.dart';
+import 'package:fluttermint/src/cli/commands/screen_command.dart';
+import 'package:fluttermint/src/cli/commands/status_command.dart';
+import 'package:fluttermint/src/config/constants.dart';
 
-class FlutterForgeRunner extends CommandRunner<void> {
-  FlutterForgeRunner()
+class FlutterMintRunner extends CommandRunner<void> {
+  FlutterMintRunner()
       : super(Constants.toolName, Constants.description) {
     addCommand(CreateCommand());
     addCommand(AddCommand());
@@ -46,7 +46,7 @@ class FlutterForgeRunner extends CommandRunner<void> {
     try {
       final results = parse(args);
       if (results['version'] == true) {
-        print('FlutterForge v${Constants.version}');
+        print('FlutterMint v${Constants.version}');
         return;
       }
       // No command specified — show the styled banner

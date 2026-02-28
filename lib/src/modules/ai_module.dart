@@ -1,6 +1,6 @@
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/templates/services/ai_service_template.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/templates/services/ai_service_template.dart';
 
 class AiModule extends Module {
   @override

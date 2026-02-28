@@ -1,4 +1,4 @@
-import 'package:flutterforge/src/config/project_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
 
 class TestHelpersTemplate {
   TestHelpersTemplate._();

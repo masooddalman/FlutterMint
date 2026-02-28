@@ -2,18 +2,18 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 
-import 'package:flutterforge/src/cli/prompts/prompt_utils.dart';
-import 'package:flutterforge/src/config/forge_config.dart';
-import 'package:flutterforge/src/generator/module_adder.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/modules/module_registry.dart';
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+import 'package:fluttermint/src/generator/module_adder.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/modules/module_registry.dart';
 
 class AddCommand extends Command<void> {
   @override
   final String name = 'add';
 
   @override
-  final String description = 'Add a module to an existing FlutterForge project.';
+  final String description = 'Add a module to an existing FlutterMint project.';
 
   @override
   Future<void> run() async {
@@ -23,10 +23,10 @@ class AddCommand extends Command<void> {
     final forgeConfig = ForgeConfig.load(projectPath);
     if (forgeConfig == null) {
       stderr.writeln(
-        'Error: No FlutterForge project found in the current directory.',
+        'Error: No FlutterMint project found in the current directory.',
       );
       stderr.writeln(
-        'Make sure you are inside a project created with "flutterforge create".',
+        'Make sure you are inside a project created with "fluttermint create".',
       );
       return;
     }

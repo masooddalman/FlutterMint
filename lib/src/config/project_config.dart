@@ -1,5 +1,5 @@
-import 'package:flutterforge/src/config/cicd_config.dart';
-import 'package:flutterforge/src/config/flavors_config.dart';
+import 'package:fluttermint/src/config/cicd_config.dart';
+import 'package:fluttermint/src/config/flavors_config.dart';
 
 class ProjectConfig {
   const ProjectConfig({

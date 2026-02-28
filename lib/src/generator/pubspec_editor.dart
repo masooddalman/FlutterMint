@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-import 'package:flutterforge/src/modules/module.dart';
+import 'package:fluttermint/src/modules/module.dart';
 
 class PubspecEditor {
   Future<void> addDependencies(

@@ -1,32 +1,32 @@
-# FlutterForge
+# FlutterMint
 
 > A CLI tool that generates production-ready Flutter projects with pre-configured architecture, modules, and CI/CD pipelines.
 
 <p align="center">
-  <img src="assets/banner.png" alt="FlutterForge Banner" width="400" />
+  <img src="assets/banner.png" alt="FlutterMint Banner" width="400" />
 </p>
-  <img src="assets/flutterForge.png" alt="FlutterForge"
+  <img src="assets/flutterForge.png" alt="FlutterMint"
   width="400">
 <p align="center">
 
 </p>
-## What is FlutterForge?
+## What is FlutterMint?
 
-FlutterForge scaffolds Flutter projects with a clean, opinionated architecture out of the box. Instead of spending hours wiring up state management, dependency injection, routing, theming, API layers, and CI/CD pipelines, you run a single command and get a project that's ready for feature development.
+FlutterMint scaffolds Flutter projects with a clean, opinionated architecture out of the box. Instead of spending hours wiring up state management, dependency injection, routing, theming, API layers, and CI/CD pipelines, you run a single command and get a project that's ready for feature development.
 
 It generates projects following **MVVM + Clean Architecture** with **Provider** for state management and **GetIt** for dependency injection. Every generated file follows consistent patterns — base view models, repository interfaces, use case layers, and feature-based folder structure.
 
-Beyond initial scaffolding, FlutterForge manages the project lifecycle. You can add or remove modules after creation, and shared files (`main.dart`, `app.dart`, `locator.dart`) are automatically recomposed to reflect the current module set. The CI/CD wizard generates GitHub Actions workflows with deployment to Firebase App Distribution, Google Play Store, and Apple TestFlight.
+Beyond initial scaffolding, FlutterMint manages the project lifecycle. You can add or remove modules after creation, and shared files (`main.dart`, `app.dart`, `locator.dart`) are automatically recomposed to reflect the current module set. The CI/CD wizard generates GitHub Actions workflows with deployment to Firebase App Distribution, Google Play Store, and Apple TestFlight.
 
 ### Key Capabilities
 
 - **Interactive wizard** — guided project setup with module selection and organization/package name configuration
 - **13 modules** — MVVM, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, CI/CD, and flavors/environments
-- **Screen generator** — `flutterforge screen <name>` scaffolds a complete MVVM screen with auto-injection into locator and router, optional route parameters, and test generation
+- **Screen generator** — `fluttermint screen <name>` scaffolds a complete MVVM screen with auto-injection into locator and router, optional route parameters, and test generation
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
 - **Flavors / Environments** — compile-time environment config via `--dart-define-from-file` with per-environment JSON files and interactive config wizard
-- **Run & Build commands** — `flutterforge run` and `flutterforge build` with interactive flavor, device, platform, and build mode selection
+- **Run & Build commands** — `fluttermint run` and `fluttermint build` with interactive flavor, device, platform, and build mode selection
 - **Multi-platform** — Android and iOS by default, with opt-in support for Web, macOS, Windows, and Linux
 - **Clean architecture** — domain/data/feature layers with repositories, use cases, and view models
 
@@ -34,18 +34,18 @@ Beyond initial scaffolding, FlutterForge manages the project lifecycle. You can 
 
 ```bash
 # Clone the repository
-git clone https://github.com/<owner>/FlutterForge.git
-cd FlutterForge
+git clone https://github.com/<owner>/FlutterMint.git
+cd FlutterMint
 
 # Install dependencies
 dart pub get
 
 # Run directly
-dart bin/flutterforge.dart create
+dart bin/fluttermint.dart create
 
 # Or activate globally
 dart pub global activate --source path .
-flutterforge create
+fluttermint create
 ```
 
 **Requirements:** Dart SDK ^3.0.0, Flutter SDK on PATH.
@@ -56,10 +56,10 @@ flutterforge create
 
 ```bash
 # Interactive wizard — prompts for app name, organization, and modules
-flutterforge create
+fluttermint create
 
 # Quick create with defaults (MVVM + Logging)
-flutterforge create my_app
+fluttermint create my_app
 ```
 
 The wizard asks for:
@@ -68,34 +68,34 @@ The wizard asks for:
 3. **Optional modules** — yes/no for each available module
 4. **Platforms** — Android and iOS included by default; optionally enable Web, macOS, Windows, Linux
 
-Quick create (`flutterforge create my_app`) uses default modules and platforms (Android + iOS).
+Quick create (`fluttermint create my_app`) uses default modules and platforms (Android + iOS).
 
 ### Manage platforms
 
 ```bash
 # Show enabled and available platforms
-flutterforge platform
+fluttermint platform
 
 # Interactively add platforms
-flutterforge platform add
+fluttermint platform add
 
 # Add specific platforms directly
-flutterforge platform add web macos
+fluttermint platform add web macos
 ```
 
-Adding a platform runs `flutter create --platforms <platform> .` under the hood and updates `.flutterforge.yaml`.
+Adding a platform runs `flutter create --platforms <platform> .` under the hood and updates `.fluttermint.yaml`.
 
 ### Manage modules
 
 ```bash
 # Add a module to an existing project
-flutterforge add routing
+fluttermint add routing
 
 # Remove a module
-flutterforge remove theming
+fluttermint remove theming
 
 # See what's installed
-flutterforge status
+fluttermint status
 ```
 
 Adding or removing a module automatically updates `pubspec.yaml` and recomposes `main.dart`, `app.dart`, and `locator.dart`.
@@ -104,13 +104,13 @@ Adding or removing a module automatically updates `pubspec.yaml` and recomposes 
 
 ```bash
 # Generate a full MVVM screen (model, repository, usecase, viewmodel, view, tests)
-flutterforge screen profile
+fluttermint screen profile
 
 # With route parameters
-flutterforge screen profile --param id:String
+fluttermint screen profile --param id:String
 
 # Multiple parameters (short form)
-flutterforge screen product -p id:String -p category:String
+fluttermint screen product -p id:String -p category:String
 ```
 
 This generates the complete feature stack and automatically:
@@ -123,10 +123,10 @@ This generates the complete feature stack and automatically:
 
 ```bash
 # Enable HTTP (non-HTTPS) on both Android and iOS
-flutterforge enable-http
+fluttermint enable-http
 
 # Disable HTTP and revert to HTTPS only
-flutterforge disable-http
+fluttermint disable-http
 ```
 
 - **Android:** adds/removes `android:usesCleartextTraffic="true"` in `AndroidManifest.xml`
@@ -136,7 +136,7 @@ flutterforge disable-http
 
 ```bash
 # Add flavors module and configure environments
-flutterforge config flavors
+fluttermint config flavors
 ```
 
 When configuring an existing project, an action menu lets you:
@@ -149,7 +149,7 @@ Generated files:
 - `config/dev.json`, `config/staging.json`, etc. — per-environment config values
 - `lib/core/config/env_config.dart` — compile-time constants via `String.fromEnvironment()`
 
-Run with a specific environment using `flutterforge run` (see below) or manually:
+Run with a specific environment using `fluttermint run` (see below) or manually:
 ```bash
 flutter run --dart-define-from-file=config/dev.json
 flutter run --dart-define-from-file=config/production.json
@@ -158,7 +158,7 @@ flutter run --dart-define-from-file=config/production.json
 ### Run a project
 
 ```bash
-flutterforge run
+fluttermint run
 ```
 
 Interactive prompts guide you through:
@@ -170,7 +170,7 @@ Runs `flutter run` with the selected device and `--dart-define-from-file` for th
 ### Build a project
 
 ```bash
-flutterforge build
+fluttermint build
 ```
 
 Interactive prompts guide you through:
@@ -193,7 +193,7 @@ my_app-dev-debug-v1.0.0-arm64-v8a.apk   (split per ABI)
 ### Configure CI/CD
 
 ```bash
-flutterforge config cicd
+fluttermint config cicd
 ```
 
 Opens an interactive wizard to configure:
@@ -270,7 +270,7 @@ my_app/
 │   └── production.json                        # Production environment config
 ├── .github/workflows/ci.yml                  # CI/CD pipeline
 ├── whatsnew/whatsnew-en-US                    # Release notes
-├── .flutterforge.yaml                        # Project config
+├── .fluttermint.yaml                        # Project config
 ├── analysis_options.yaml
 ├── l10n.yaml                                 # Localization config
 └── pubspec.yaml
@@ -301,7 +301,7 @@ Auto-publish mode reads release notes from `whatsnew/whatsnew-en-US` and passes 
 
 ## Configuration
 
-Project configuration is stored in `.flutterforge.yaml`:
+Project configuration is stored in `.fluttermint.yaml`:
 
 ```yaml
 app_name: my_app
@@ -378,7 +378,7 @@ flavors:
 5. **Shared file composition** — `main.dart`, `app.dart`, and `locator.dart` are composed by collecting imports, setup lines, provider declarations, and service registrations from all active modules
 6. **Platform configuration** — Android permissions are added to `AndroidManifest.xml` when the API module is included; flavors inject dart-defines decoding into `build.gradle(.kts)` for native app name and package name suffixes
 7. **`flutter pub get`** — resolves the dependency tree
-8. **Config persistence** — `.flutterforge.yaml` records the project state
+8. **Config persistence** — `.fluttermint.yaml` records the project state
 
 ### How Screen Generation Works
 
@@ -402,8 +402,8 @@ flavors:
 - [ ] Fastlane integration for iOS/Android signing
 - [x] Flavors/environments support (dev, staging, production)
 - [ ] Custom module authoring (user-defined templates)
-- [ ] `flutterforge upgrade` command to update module templates in existing projects
-- [ ] `flutterforge doctor` command to validate project health
+- [ ] `fluttermint upgrade` command to update module templates in existing projects
+- [ ] `fluttermint doctor` command to validate project health
 - [ ] Riverpod and Bloc as alternative state management options
 - [ ] Supabase and Firebase backend module integration
 - [x] Windows, macOS, and Linux desktop platform support

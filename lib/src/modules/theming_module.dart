@@ -1,6 +1,6 @@
-import 'package:flutterforge/src/config/project_config.dart';
-import 'package:flutterforge/src/modules/module.dart';
-import 'package:flutterforge/src/templates/services/theme_template.dart';
+import 'package:fluttermint/src/config/project_config.dart';
+import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/templates/services/theme_template.dart';
 
 class ThemingModule extends Module {
   @override

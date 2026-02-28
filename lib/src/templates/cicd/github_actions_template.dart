@@ -1,5 +1,5 @@
-import 'package:flutterforge/src/config/cicd_config.dart';
-import 'package:flutterforge/src/config/project_config.dart';
+import 'package:fluttermint/src/config/cicd_config.dart';
+import 'package:fluttermint/src/config/project_config.dart';
 
 class GithubActionsTemplate {
   GithubActionsTemplate._();
