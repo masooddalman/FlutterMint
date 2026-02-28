@@ -34,18 +34,15 @@ Beyond initial scaffolding, FlutterMint manages the project lifecycle. You can a
 ## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/<owner>/FlutterMint.git
-cd FlutterMint
+dart pub global activate fluttermint
+```
 
-# Install dependencies
-dart pub get
+Make sure the pub global bin directory is on your PATH:
+- **Windows:** `%LOCALAPPDATA%\Pub\Cache\bin`
+- **macOS/Linux:** `$HOME/.pub-cache/bin`
 
-# Run directly
-dart bin/fluttermint.dart create
-
-# Or activate globally
-dart pub global activate --source path .
+Then run:
+```bash
 fluttermint create
 ```
 
