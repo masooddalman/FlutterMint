@@ -26,6 +26,16 @@ class TestingModule extends Module {
 
   @override
   Map<String, String> generateFiles(ProjectConfig config) {
+    if (config.designPattern == DesignPattern.riverpod) {
+      return {
+        'test/helpers/test_helpers.dart':
+            TestHelpersTemplate.generateTestHelpersRiverpod(config),
+        'test/features/home/home_notifier_test.dart':
+            TestHelpersTemplate.generateNotifierTestExample(config),
+        'test/features/home/home_view_test.dart':
+            TestHelpersTemplate.generateWidgetTestExampleRiverpod(config),
+      };
+    }
     if (config.designPattern == DesignPattern.mvi) {
       return {
         'test/helpers/test_helpers.dart':

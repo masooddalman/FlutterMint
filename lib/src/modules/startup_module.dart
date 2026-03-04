@@ -24,6 +24,18 @@ class StartupModule extends Module {
 
   @override
   Map<String, String> generateFiles(ProjectConfig config) {
+    if (config.designPattern == DesignPattern.riverpod) {
+      return {
+        'lib/app/startup/startup_service.dart':
+            StartupTemplate.generateStartupService(config),
+        'lib/app/startup/startup_notifier.dart':
+            StartupTemplate.generateStartupNotifier(config),
+        'lib/app/startup/startup_providers.dart':
+            StartupTemplate.generateStartupProviders(config),
+        'lib/app/startup/startup_view.dart':
+            StartupTemplate.generateStartupViewRiverpod(config),
+      };
+    }
     if (config.designPattern == DesignPattern.mvi) {
       return {
         'lib/app/startup/startup_service.dart':
@@ -57,6 +69,7 @@ class StartupModule extends Module {
   @override
   List<String> locatorImports(ProjectConfig config) {
     if (!config.hasModule('locator')) return [];
+    if (config.designPattern == DesignPattern.riverpod) return [];
     if (config.designPattern == DesignPattern.mvi) {
       return [
         'package:${config.appNameSnakeCase}/app/startup/startup_service.dart',
@@ -72,6 +85,7 @@ class StartupModule extends Module {
   @override
   List<String> locatorRegistrations(ProjectConfig config) {
     if (!config.hasModule('locator')) return [];
+    if (config.designPattern == DesignPattern.riverpod) return [];
     if (config.designPattern == DesignPattern.mvi) {
       return [
         'locator.registerLazySingleton<StartupService>(() => StartupService());',

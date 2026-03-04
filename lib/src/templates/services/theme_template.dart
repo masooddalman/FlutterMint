@@ -101,4 +101,28 @@ class ThemeProvider extends ChangeNotifier {
 }
 ''';
   }
+
+  static String generateThemeNotifier(ProjectConfig config) {
+    return '''import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final themeNotifierProvider =
+    NotifierProvider<ThemeNotifier, ThemeMode>(ThemeNotifier.new);
+
+class ThemeNotifier extends Notifier<ThemeMode> {
+  @override
+  ThemeMode build() => ThemeMode.system;
+
+  bool get isDarkMode => state == ThemeMode.dark;
+
+  void setThemeMode(ThemeMode mode) {
+    state = mode;
+  }
+
+  void toggleTheme() {
+    state = state == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+  }
+}
+''';
+  }
 }

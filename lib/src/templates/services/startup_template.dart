@@ -253,6 +253,107 @@ class StartupView extends StatelessWidget {
 ''';
   }
 
+  // --- Riverpod variants ---
+
+  static String generateStartupNotifier(ProjectConfig config) {
+    return '''import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
+
+enum StartupNotifierState { loading, success, error }
+
+class StartupNotifier extends AsyncNotifier<StartupNotifierState> {
+  @override
+  Future<StartupNotifierState> build() async {
+    final service = StartupService();
+    await service.initialize();
+    switch (service.state) {
+      case StartupState.success:
+        return StartupNotifierState.success;
+      case StartupState.error:
+        throw Exception(service.errorMessage ?? 'Initialization failed');
+      case StartupState.loading:
+        return StartupNotifierState.loading;
+    }
+  }
+
+  Future<void> retry() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() => build());
+  }
+}
+''';
+  }
+
+  static String generateStartupProviders(ProjectConfig config) {
+    return '''import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:${config.appNameSnakeCase}/app/startup/startup_notifier.dart';
+
+final startupNotifierProvider =
+    AsyncNotifierProvider<StartupNotifier, StartupNotifierState>(
+  StartupNotifier.new,
+);
+''';
+  }
+
+  static String generateStartupViewRiverpod(ProjectConfig config) {
+    return '''import 'package:flutter/material.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:${config.appNameSnakeCase}/app/startup/startup_providers.dart';
+
+class StartupView extends ConsumerWidget {
+  const StartupView({super.key, required this.onReady});
+
+  final VoidCallback onReady;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(startupNotifierProvider);
+
+    ref.listen(startupNotifierProvider, (_, next) {
+      if (next.hasValue) {
+        onReady();
+      }
+    });
+
+    return Scaffold(
+      body: Center(
+        child: state.when(
+          loading: () => const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 24),
+              Text('Initializing...'),
+            ],
+          ),
+          error: (error, _) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(error.toString()),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () =>
+                    ref.read(startupNotifierProvider.notifier).retry(),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+          data: (_) =>
+              const Icon(Icons.check_circle, size: 64, color: Colors.green),
+        ),
+      ),
+    );
+  }
+}
+''';
+  }
+
   static String generateStartupView(ProjectConfig config) {
     final hasLocator = config.hasModule('locator');
     final locatorImport = hasLocator
