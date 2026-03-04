@@ -1,6 +1,6 @@
 name: fluttermint
 description: A CLI tool to generate Flutter projects with pre-configured architecture and modules.
-version: 0.1.1
+version: 0.2.0
 repository: https://github.com/masooddalman/FlutterMint
 issue_tracker: https://github.com/masooddalman/FlutterMint/issues
 topics:

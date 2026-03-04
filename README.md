@@ -15,21 +15,30 @@
 
 FlutterMint scaffolds Flutter projects with a clean, opinionated architecture out of the box. Instead of spending hours wiring up state management, dependency injection, routing, theming, API layers, and CI/CD pipelines, you run a single command and get a project that's ready for feature development.
 
-It generates projects following **MVVM + Clean Architecture** with **Provider** for state management and **GetIt** for dependency injection. Every generated file follows consistent patterns — base view models, repository interfaces, use case layers, and feature-based folder structure.
+Choose from **three architecture patterns**:
+
+| Pattern | State Management | Dependency Injection |
+|---------|-----------------|---------------------|
+| **MVVM** | Provider + ChangeNotifier | GetIt (service locator) |
+| **MVI** | BLoC + Equatable | GetIt (service locator) |
+| **MVVM + Riverpod** | flutter_riverpod + AsyncNotifier | Riverpod providers (no GetIt) |
+
+Every generated file follows consistent patterns — repository interfaces, use case layers, and feature-based folder structure. The domain layer (models, repositories, use cases) is shared across all patterns; only the presentation layer differs.
 
 Beyond initial scaffolding, FlutterMint manages the project lifecycle. You can add or remove modules after creation, and shared files (`main.dart`, `app.dart`, `locator.dart`) are automatically recomposed to reflect the current module set. The CI/CD wizard generates GitHub Actions workflows with deployment to Firebase App Distribution, Google Play Store, and Apple TestFlight.
 
 ### Key Capabilities
 
-- **Interactive wizard** — guided project setup with module selection and organization/package name configuration
-- **13 modules** — MVVM, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, CI/CD, and flavors/environments
-- **Screen generator** — `fluttermint screen <name>` scaffolds a complete MVVM screen with auto-injection into locator and router, optional route parameters, and test generation
+- **Interactive wizard** — guided project setup with architecture pattern selection, module selection, and organization/package name configuration
+- **3 architecture patterns** — MVVM (Provider), MVI (BLoC), and MVVM + Riverpod — choose during project creation
+- **15 modules** — architecture patterns, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, CI/CD, and flavors/environments
+- **Screen generator** — `fluttermint screen <name>` scaffolds a complete screen (viewmodel/bloc/notifier + view + domain layer) with auto-injection into locator and router, optional route parameters, and test generation
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
 - **Flavors / Environments** — compile-time environment config via `--dart-define-from-file` with per-environment JSON files and interactive config wizard
 - **Run & Build commands** — `fluttermint run` and `fluttermint build` with interactive flavor, device, platform, and build mode selection
 - **Multi-platform** — Android and iOS by default, with opt-in support for Web, macOS, Windows, and Linux
-- **Clean architecture** — domain/data/feature layers with repositories, use cases, and view models
+- **Clean architecture** — domain/data/feature layers with repositories, use cases, and pattern-specific presentation
 
 ## Installation
 
@@ -69,10 +78,11 @@ fluttermint create my_app
 The wizard asks for:
 1. **App name** — lowercase with underscores (e.g. `my_app`)
 2. **Organization** — reverse domain notation (e.g. `com.mycompany`)
-3. **Optional modules** — yes/no for each available module
-4. **Platforms** — Android and iOS included by default; optionally enable Web, macOS, Windows, Linux
+3. **Architecture pattern** — MVVM, MVI (BLoC), or MVVM + Riverpod
+4. **Optional modules** — yes/no for each available module (filtered by chosen pattern)
+5. **Platforms** — Android and iOS included by default; optionally enable Web, macOS, Windows, Linux
 
-Quick create (`fluttermint create my_app`) uses default modules and platforms (Android + iOS).
+Quick create (`fluttermint create my_app`) prompts for architecture pattern, then uses default modules and platforms (Android + iOS).
 
 ### Manage platforms
 
@@ -107,7 +117,7 @@ Adding or removing a module automatically updates `pubspec.yaml` and recomposes 
 ### Add a screen
 
 ```bash
-# Generate a full MVVM screen (model, repository, usecase, viewmodel, view, tests)
+# Generate a full screen (model, repository, usecase, viewmodel/bloc/notifier, view, tests)
 fluttermint screen profile
 
 # With route parameters
@@ -117,8 +127,8 @@ fluttermint screen profile --param id:String
 fluttermint screen product -p id:String -p category:String
 ```
 
-This generates the complete feature stack and automatically:
-- Injects dependencies into `locator.dart` (repository, usecase, viewmodel)
+This generates the complete feature stack matching your chosen architecture pattern and automatically:
+- Injects dependencies into `locator.dart` (MVVM/MVI) or generates provider declarations (Riverpod)
 - Adds a `RoutePaths` constant and `GoRoute` to `app_router.dart`
 - Creates unit and widget tests (if testing module is installed)
 - Creates a screen-specific `widgets/` folder
@@ -210,23 +220,32 @@ Opens an interactive wizard to configure:
 
 ## Modules
 
-| Module | Default | Description | Dependencies |
-|--------|---------|-------------|--------------|
-| **mvvm** | Yes | Base viewmodel, home feature scaffold, repository + use case layers | `provider ^6.1.0` |
-| **logging** | Yes | Leveled `LoggerService` with info/warning/error methods | — |
-| **locator** | No | GetIt service locator with auto-registration for all modules | `get_it ^8.0.0` |
-| **theming** | No | Light/dark Material 3 themes with `ThemeProvider` toggle | — |
-| **routing** | No | GoRouter with `RoutePaths` constants and `MaterialApp.router` integration | `go_router ^14.0.0` |
-| **api** | No | Dio HTTP client with interceptors, exception handling, and auto-configured Android network permissions | `dio ^5.4.0` |
-| **ai** | No | Generic AI service template for LLM/ML integration (auto-includes API module) | — |
-| **localization** | No | ARB-based localization with English and Arabic starter files | `intl ^0.20.2` |
-| **startup** | No | Splash/initialization flow with startup service and viewmodel | — |
-| **toast** | No | Toast notifications via `ScaffoldMessenger` | — |
-| **testing** | No | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
-| **cicd** | No | GitHub Actions workflow with build, test, and deployment steps | — |
-| **flavors** | No | Per-environment JSON configs with compile-time `EnvConfig` via `--dart-define-from-file` | — |
+### Architecture Modules (pick one)
 
-Module dependencies are resolved automatically. For example, enabling `theming` auto-includes `mvvm`, and enabling `ai` auto-includes `api`.
+| Module | Description | Dependencies |
+|--------|-------------|--------------|
+| **mvvm** | Provider + ChangeNotifier — base viewmodel, home feature scaffold | `provider ^6.1.0` |
+| **mvi** | BLoC + Equatable — base bloc/event/state, home feature scaffold | `flutter_bloc ^9.1.0`, `equatable ^2.0.0` |
+| **riverpod** | flutter_riverpod + AsyncNotifier — home feature scaffold with providers | `flutter_riverpod ^2.6.1` |
+
+### Optional Modules
+
+| Module | Description | Dependencies |
+|--------|-------------|--------------|
+| **logging** | Leveled `LoggerService` with info/warning/error methods | — |
+| **locator** | GetIt service locator with auto-registration (MVVM/MVI only) | `get_it ^8.0.0` |
+| **theming** | Light/dark Material 3 themes with toggle | — |
+| **routing** | GoRouter with `RoutePaths` constants and `MaterialApp.router` integration | `go_router ^14.0.0` |
+| **api** | Dio HTTP client with interceptors, exception handling, and auto-configured Android network permissions | `dio ^5.4.0` |
+| **ai** | Generic AI service template for LLM/ML integration (auto-includes API module) | — |
+| **localization** | ARB-based localization with English and Arabic starter files | `intl ^0.20.2` |
+| **startup** | Splash/initialization flow with pattern-appropriate startup logic | — |
+| **toast** | Toast notifications via `ScaffoldMessenger` | — |
+| **testing** | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
+| **cicd** | GitHub Actions workflow with build, test, and deployment steps | — |
+| **flavors** | Per-environment JSON configs with compile-time `EnvConfig` via `--dart-define-from-file` | — |
+
+Module dependencies are resolved automatically. Modules incompatible with the chosen pattern are automatically excluded — for example, the **locator** module is hidden when using Riverpod (Riverpod providers replace GetIt).
 
 When the **API module** is included, `INTERNET` and `ACCESS_NETWORK_STATE` permissions are automatically added to `android/app/src/main/AndroidManifest.xml`.
 
@@ -237,10 +256,13 @@ my_app/
 ├── lib/
 │   ├── app/
 │   │   ├── app.dart                          # MaterialApp widget
-│   │   ├── locator.dart                      # GetIt service registrations
+│   │   ├── locator.dart                      # GetIt registrations (MVVM/MVI)
 │   │   └── startup/                          # Startup flow (if enabled)
 │   ├── core/
-│   │   ├── base/base_viewmodel.dart          # Base class for all viewmodels
+│   │   ├── base/
+│   │   │   ├── base_viewmodel.dart           # MVVM: ChangeNotifier base class
+│   │   │   ├── base_state.dart               # MVI: Equatable base state
+│   │   │   └── base_event.dart               # MVI: Equatable base event
 │   │   ├── api/                              # Dio client + interceptors
 │   │   ├── ai/                               # AI service template
 │   │   ├── localization/arb/                 # ARB translation files
@@ -252,35 +274,39 @@ my_app/
 │   │   │   └── toast_service.dart            # Toast notifications
 │   │   └── theme/
 │   │       ├── app_theme.dart                # Light/dark themes
-│   │       └── theme_provider.dart           # Theme switching
+│   │       ├── theme_provider.dart           # MVVM/MVI: ChangeNotifier toggle
+│   │       └── theme_notifier.dart           # Riverpod: Notifier toggle
 │   ├── data/repositories/                    # Repository implementations
 │   ├── domain/
 │   │   ├── repositories/                     # Repository interfaces
 │   │   └── usecases/                         # Business logic
 │   ├── features/
-│   │   ├── common/widgets/                     # Shared widgets across screens
+│   │   ├── common/widgets/                   # Shared widgets across screens
 │   │   └── home/
 │   │       ├── models/home_model.dart
-│   │       ├── viewmodels/home_viewmodel.dart
+│   │       ├── viewmodels/                   # MVVM: ChangeNotifier viewmodels
+│   │       ├── bloc/                         # MVI: Bloc + Event + State
+│   │       ├── notifiers/                    # Riverpod: AsyncNotifier classes
+│   │       ├── providers/                    # Riverpod: Provider declarations
 │   │       ├── views/home_view.dart
-│   │       └── widgets/                        # Screen-specific widgets
+│   │       └── widgets/                      # Screen-specific widgets
 │   └── main.dart
 ├── test/
 │   ├── features/home/                        # Example tests
 │   └── helpers/test_helpers.dart              # Mocks and setup
 ├── config/
-│   ├── dev.json                               # Dev environment config
-│   ├── staging.json                           # Staging environment config
-│   └── production.json                        # Production environment config
+│   ├── dev.json                              # Dev environment config
+│   ├── staging.json                          # Staging environment config
+│   └── production.json                       # Production environment config
 ├── .github/workflows/ci.yml                  # CI/CD pipeline
 ├── whatsnew/whatsnew-en-US                    # Release notes
-├── .fluttermint.yaml                        # Project config
+├── .fluttermint.yaml                         # Project config
 ├── analysis_options.yaml
 ├── l10n.yaml                                 # Localization config
 └── pubspec.yaml
 ```
 
-Only directories and files for enabled modules are generated.
+Only directories and files for the chosen pattern and enabled modules are generated.
 
 ## CI/CD Pipeline
 
@@ -310,6 +336,7 @@ Project configuration is stored in `.fluttermint.yaml`:
 ```yaml
 app_name: my_app
 org: com.mycompany
+design_pattern: mvvm          # mvvm | mvi | riverpod
 platforms:
   - android
   - ios
@@ -363,9 +390,10 @@ flavors:
 | | |
 |---|---|
 | **Language** | Dart |
-| **Architecture** | MVVM + Clean Architecture |
-| **State Management** | Provider (ChangeNotifier) |
-| **Dependency Injection** | GetIt (service locator pattern) |
+| **Architecture** | Clean Architecture (domain/data/feature layers) |
+| **Patterns** | MVVM (Provider), MVI (BLoC), MVVM + Riverpod |
+| **State Management** | Provider, flutter_bloc, or flutter_riverpod |
+| **Dependency Injection** | GetIt (MVVM/MVI) or Riverpod providers |
 | **Routing** | GoRouter |
 | **HTTP Client** | Dio with interceptors |
 | **Testing** | Mocktail for mocking |
@@ -386,12 +414,13 @@ flavors:
 
 ### How Screen Generation Works
 
-1. **Feature files** — model, repository (interface + impl), usecase, viewmodel, and view are generated under `lib/features/<name>/` and `lib/domain/`/`lib/data/`
-2. **Locator injection** — imports and registrations are inserted into the existing `locator.dart` without rewriting it
-3. **Router injection** — a `RoutePaths` constant and `GoRoute` are inserted into `app_router.dart` using marker comments
-4. **Route parameters** — `--param id:String` generates parameterized routes (`/profile/:id`) with `state.pathParameters` extraction in the builder
-5. **Test generation** — unit and widget tests are generated when the testing module is installed
-6. **Widgets folder** — a screen-specific `widgets/` directory is created for local components
+1. **Feature files** — model, repository (interface + impl), usecase, and pattern-specific presentation files (viewmodel/bloc/notifier + view) are generated under `lib/features/<name>/` and `lib/domain/`/`lib/data/`
+2. **Locator injection** (MVVM/MVI) — imports and registrations are inserted into the existing `locator.dart` without rewriting it
+3. **Provider generation** (Riverpod) — a `providers/` file with repository, use case, and notifier providers is generated alongside the feature
+4. **Router injection** — a `RoutePaths` constant and `GoRoute` are inserted into `app_router.dart` using marker comments
+5. **Route parameters** — `--param id:String` generates parameterized routes (`/profile/:id`) with `state.pathParameters` extraction in the builder
+6. **Test generation** — unit and widget tests matching the chosen pattern are generated when the testing module is installed
+7. **Widgets folder** — a screen-specific `widgets/` directory is created for local components
 
 ### CLI Dependencies
 
@@ -408,7 +437,7 @@ flavors:
 - [ ] Custom module authoring (user-defined templates)
 - [ ] `fluttermint upgrade` command to update module templates in existing projects
 - [ ] `fluttermint doctor` command to validate project health
-- [ ] Riverpod and Bloc as alternative state management options
+- [x] Riverpod and BLoC as alternative state management options
 - [ ] Supabase and Firebase backend module integration
 - [x] Windows, macOS, and Linux desktop platform support
 - [x] Plugin for VS Code
