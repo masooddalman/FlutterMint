@@ -2,13 +2,15 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:fluttermint/src/config/project_config.dart';
 import 'package:fluttermint/src/modules/module.dart';
 
 class PubspecEditor {
   Future<void> addDependencies(
     String projectPath,
-    List<Module> modules,
-  ) async {
+    List<Module> modules, {
+    ProjectConfig? config,
+  }) async {
     final pubspecPath = p.join(projectPath, 'pubspec.yaml');
     final file = File(pubspecPath);
     var content = await file.readAsString();
@@ -18,7 +20,8 @@ class PubspecEditor {
     final sdkDeps = <String, String>{};
 
     for (final module in modules) {
-      deps.addAll(module.dependencies);
+      deps.addAll(
+          config != null ? module.resolvedDependencies(config) : module.dependencies);
       devDeps.addAll(module.devDependencies);
       sdkDeps.addAll(module.sdkDependencies);
     }

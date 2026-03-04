@@ -8,6 +8,7 @@ import 'package:fluttermint/src/config/project_config.dart';
 import 'package:fluttermint/src/generator/file_writer.dart';
 import 'package:fluttermint/src/templates/mvi/mvi_screen_template.dart';
 import 'package:fluttermint/src/templates/mvvm/screen_template.dart';
+import 'package:fluttermint/src/templates/riverpod/riverpod_screen_template.dart';
 
 class ScreenGenerator {
   final FileWriter _fileWriter = FileWriter();
@@ -26,13 +27,15 @@ class ScreenGenerator {
       cicdConfig: forgeConfig.cicdConfig,
     );
     final pascal = ProjectConfig.toPascalCase(screenName);
-    final isMvi = forgeConfig.designPattern == DesignPattern.mvi;
+    final pattern = forgeConfig.designPattern;
 
     // Step 1: Generate feature files
     _printStep(1, 'Generating $screenName screen files...');
-    final files = isMvi
-        ? _mviFiles(screenName, config, params)
-        : _mvvmFiles(screenName, config, params);
+    final files = switch (pattern) {
+      DesignPattern.riverpod => _riverpodFiles(screenName, config, params),
+      DesignPattern.mvi => _mviFiles(screenName, config, params),
+      DesignPattern.mvvm => _mvvmFiles(screenName, config, params),
+    };
 
     var filesCreated = 0;
     for (final entry in files.entries) {
@@ -45,10 +48,12 @@ class ScreenGenerator {
       filesCreated++;
     }
 
-    // Step 2: Inject into locator.dart
-    if (forgeConfig.modules.contains('locator')) {
+    // Step 2: Inject into locator.dart (skipped for Riverpod)
+    if (pattern == DesignPattern.riverpod) {
+      _printStep(2, 'Skipping locator (Riverpod uses providers)');
+    } else if (forgeConfig.modules.contains('locator')) {
       _printStep(2, 'Updating locator.dart...');
-      if (isMvi) {
+      if (pattern == DesignPattern.mvi) {
         await _injectLocatorMvi(projectPath, config, screenName, pascal);
       } else {
         await _injectLocator(projectPath, config, screenName, pascal);
@@ -68,9 +73,11 @@ class ScreenGenerator {
     // Step 4: Generate tests
     if (forgeConfig.modules.contains('testing')) {
       _printStep(4, 'Generating tests...');
-      final testFiles = isMvi
-          ? _mviTestFiles(screenName, config)
-          : _mvvmTestFiles(screenName, config);
+      final testFiles = switch (pattern) {
+        DesignPattern.riverpod => _riverpodTestFiles(screenName, config),
+        DesignPattern.mvi => _mviTestFiles(screenName, config),
+        DesignPattern.mvvm => _mvvmTestFiles(screenName, config),
+      };
       for (final entry in testFiles.entries) {
         final filePath = p.join(projectPath, entry.key);
         if (await File(filePath).exists()) {
@@ -85,9 +92,21 @@ class ScreenGenerator {
     }
 
     // Summary
-    final patternDir = isMvi ? 'bloc' : 'viewmodels';
-    final patternFile = isMvi ? '${screenName}_bloc.dart' : '${screenName}_viewmodel.dart';
-    final testFile = isMvi ? '${screenName}_bloc_test.dart' : '${screenName}_viewmodel_test.dart';
+    final patternDir = switch (pattern) {
+      DesignPattern.riverpod => 'notifiers',
+      DesignPattern.mvi => 'bloc',
+      DesignPattern.mvvm => 'viewmodels',
+    };
+    final patternFile = switch (pattern) {
+      DesignPattern.riverpod => '${screenName}_notifier.dart',
+      DesignPattern.mvi => '${screenName}_bloc.dart',
+      DesignPattern.mvvm => '${screenName}_viewmodel.dart',
+    };
+    final testFile = switch (pattern) {
+      DesignPattern.riverpod => '${screenName}_notifier_test.dart',
+      DesignPattern.mvi => '${screenName}_bloc_test.dart',
+      DesignPattern.mvvm => '${screenName}_viewmodel_test.dart',
+    };
 
     print('');
     print('=== Screen "$screenName" created ($filesCreated files) ===');
@@ -95,9 +114,12 @@ class ScreenGenerator {
     print('Generated:');
     print('  + features/$screenName/models/${screenName}_model.dart');
     print('  + features/$screenName/$patternDir/$patternFile');
-    if (isMvi) {
+    if (pattern == DesignPattern.mvi) {
       print('  + features/$screenName/bloc/${screenName}_event.dart');
       print('  + features/$screenName/bloc/${screenName}_state.dart');
+    }
+    if (pattern == DesignPattern.riverpod) {
+      print('  + features/$screenName/providers/${screenName}_providers.dart');
     }
     print('  + features/$screenName/views/${screenName}_view.dart');
     print('  + features/$screenName/widgets/');
@@ -108,7 +130,8 @@ class ScreenGenerator {
       print('  + test/features/$screenName/$testFile');
       print('  + test/features/$screenName/${screenName}_view_test.dart');
     }
-    if (forgeConfig.modules.contains('locator')) {
+    if (forgeConfig.modules.contains('locator') &&
+        pattern != DesignPattern.riverpod) {
       print('  ~ app/locator.dart (updated)');
     }
     if (forgeConfig.modules.contains('routing')) {
@@ -166,6 +189,27 @@ class ScreenGenerator {
     };
   }
 
+  Map<String, String> _riverpodFiles(
+      String name, ProjectConfig config, Map<String, String> params) {
+    return {
+      'lib/features/$name/models/${name}_model.dart':
+          RiverpodScreenTemplate.generateModel(name, config),
+      'lib/features/$name/notifiers/${name}_notifier.dart':
+          RiverpodScreenTemplate.generateNotifier(name, config),
+      'lib/features/$name/providers/${name}_providers.dart':
+          RiverpodScreenTemplate.generateProviders(name, config),
+      'lib/features/$name/views/${name}_view.dart':
+          RiverpodScreenTemplate.generateView(name, config, params: params),
+      'lib/domain/repositories/${name}_repository.dart':
+          RiverpodScreenTemplate.generateRepository(name, config),
+      'lib/data/repositories/${name}_repository.dart':
+          RiverpodScreenTemplate.generateRepositoryImpl(name, config),
+      'lib/domain/usecases/get_${name}_data_usecase.dart':
+          RiverpodScreenTemplate.generateUseCase(name, config),
+      'lib/features/$name/widgets/.gitkeep': '',
+    };
+  }
+
   Map<String, String> _mvvmTestFiles(String name, ProjectConfig config) {
     return {
       'test/features/$name/${name}_viewmodel_test.dart':
@@ -181,6 +225,15 @@ class ScreenGenerator {
           MviScreenTemplate.generateUnitTest(name, config),
       'test/features/$name/${name}_view_test.dart':
           MviScreenTemplate.generateWidgetTest(name, config),
+    };
+  }
+
+  Map<String, String> _riverpodTestFiles(String name, ProjectConfig config) {
+    return {
+      'test/features/$name/${name}_notifier_test.dart':
+          RiverpodScreenTemplate.generateUnitTest(name, config),
+      'test/features/$name/${name}_view_test.dart':
+          RiverpodScreenTemplate.generateWidgetTest(name, config),
     };
   }
 

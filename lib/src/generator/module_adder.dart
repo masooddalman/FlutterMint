@@ -43,7 +43,8 @@ class ModuleAdder {
 
     // Step 1: Add dependencies to pubspec.yaml (only new modules)
     _printStep(1, 'Adding dependencies...');
-    await _pubspecEditor.addDependencies(projectPath, newModules);
+    await _pubspecEditor.addDependencies(projectPath, newModules,
+        config: projectConfig);
 
     // Step 2: Generate module-specific files (skip existing)
     _printStep(2, 'Generating module files...');

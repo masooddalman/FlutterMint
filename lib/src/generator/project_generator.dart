@@ -51,7 +51,7 @@ class ProjectGenerator {
 
     // Step 4: Add dependencies to pubspec.yaml
     _printStep(2, 'Configuring dependencies...');
-    await _pubspecEditor.addDependencies(projectPath, modules);
+    await _pubspecEditor.addDependencies(projectPath, modules, config: config);
 
     // Step 5: Generate module-specific files
     _printStep(3, 'Generating project structure...');
