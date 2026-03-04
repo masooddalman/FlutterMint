@@ -9,6 +9,7 @@ import 'package:fluttermint/src/modules/logging_module.dart';
 import 'package:fluttermint/src/modules/module.dart';
 import 'package:fluttermint/src/modules/mvi_module.dart';
 import 'package:fluttermint/src/modules/mvvm_module.dart';
+import 'package:fluttermint/src/modules/riverpod_module.dart';
 import 'package:fluttermint/src/modules/routing_module.dart';
 import 'package:fluttermint/src/modules/startup_module.dart';
 import 'package:fluttermint/src/modules/testing_module.dart';
@@ -21,6 +22,7 @@ class ModuleRegistry {
   static final List<Module> _allModules = [
     MvvmModule(),
     MviModule(),
+    RiverpodModule(),
     LoggingModule(),
     LocatorModule(),
     ThemingModule(),
@@ -41,20 +43,33 @@ class ModuleRegistry {
   static List<String> get defaultModuleIds =>
       defaultModuleIdsForPattern(DesignPattern.mvvm);
 
+  /// IDs of all architecture pattern modules.
+  static const _patternIds = {'mvvm', 'mvi', 'riverpod'};
+
+  /// Module IDs that are incompatible with a given pattern.
+  /// Riverpod replaces both `provider` and `get_it`, so `locator` is excluded.
+  static Set<String> excludedIdsForPattern(DesignPattern pattern) {
+    final excluded = _patternIds.difference({pattern.id});
+    if (pattern == DesignPattern.riverpod) {
+      return {...excluded, 'locator'};
+    }
+    return excluded;
+  }
+
   /// Default module IDs for the given design pattern.
   static List<String> defaultModuleIdsForPattern(DesignPattern pattern) {
-    final excluded = pattern == DesignPattern.mvvm ? 'mvi' : 'mvvm';
+    final excluded = excludedIdsForPattern(pattern);
     return _allModules
-        .where((m) => m.isDefault && m.id != excluded)
+        .where((m) => m.isDefault && !excluded.contains(m.id))
         .map((m) => m.id)
         .toList();
   }
 
-  /// Optional (non-default) modules, excluding the opposite pattern.
+  /// Optional (non-default) modules, excluding other pattern modules.
   static List<Module> optionalModulesForPattern(DesignPattern pattern) {
-    final excluded = pattern == DesignPattern.mvvm ? 'mvi' : 'mvvm';
+    final excluded = excludedIdsForPattern(pattern);
     return _allModules
-        .where((m) => !m.isDefault && m.id != excluded)
+        .where((m) => !m.isDefault && !excluded.contains(m.id))
         .toList();
   }
 

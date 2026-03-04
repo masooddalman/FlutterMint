@@ -11,6 +11,11 @@ abstract class Module {
 
   Map<String, String> get dependencies;
 
+  /// Config-aware dependencies. Override when a module's dependencies
+  /// vary by design pattern. Defaults to [dependencies].
+  Map<String, String> resolvedDependencies(ProjectConfig config) =>
+      dependencies;
+
   /// SDK dependencies like flutter_localizations.
   /// Key: package name, Value: sdk name (e.g. 'flutter')
   Map<String, String> get sdkDependencies => {};
