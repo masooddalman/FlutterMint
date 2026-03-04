@@ -117,6 +117,7 @@ class ${pascal}ViewModel extends BaseViewModel {
         : '${pascal}ViewModel(Get${pascal}DataUseCase(${pascal}RepositoryImpl()))..loadData()';
 
     final title = _toTitleCase(name);
+    final patternDesc = config.designPattern.description;
 
     // Constructor params
     final hasParams = params.isNotEmpty;
@@ -173,7 +174,7 @@ $fieldsBlock
         );
       case ViewState.success:
         return const Center(
-          child: Text('$title screen'),
+          child: Text('$title screen\\n$patternDesc', textAlign: TextAlign.center),
         );
     }
   }
@@ -252,6 +253,7 @@ void main() {
     final pascal = ProjectConfig.toPascalCase(name);
     final pkg = config.appNameSnakeCase;
     final title = _toTitleCase(name);
+    final patternDesc = config.designPattern.description;
 
     return '''import 'dart:async';
 
@@ -312,7 +314,7 @@ void main() {
       await viewModel.loadData();
       await tester.pumpWidget(_createTestWidget(viewModel));
 
-      expect(find.text('$title screen'), findsOneWidget);
+      expect(find.text('$title screen\\n$patternDesc'), findsOneWidget);
     });
 
     testWidgets('shows error message on failure', (tester) async {
@@ -345,7 +347,7 @@ class _${pascal}Body extends StatelessWidget {
         );
       case ViewState.success:
         return const Center(
-          child: Text('$title screen'),
+          child: Text('$title screen\\n$patternDesc', textAlign: TextAlign.center),
         );
     }
   }

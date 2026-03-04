@@ -138,6 +138,7 @@ class ${pascal}Bloc extends Bloc<${pascal}Event, ${pascal}State> {
         : '${pascal}Bloc(Get${pascal}DataUseCase(${pascal}RepositoryImpl()))..add(const ${pascal}LoadRequested())';
 
     final title = _toTitleCase(name);
+    final patternDesc = config.designPattern.description;
 
     // Constructor params
     final hasParams = params.isNotEmpty;
@@ -202,7 +203,7 @@ $fieldsBlock
                   selector: (state) => state.data,
                   builder: (context, data) {
                     return const Center(
-                      child: Text('$title screen'),
+                      child: Text('$title screen\\n$patternDesc', textAlign: TextAlign.center),
                     );
                   },
                 );
@@ -292,6 +293,7 @@ void main() {
     final pascal = ProjectConfig.toPascalCase(name);
     final pkg = config.appNameSnakeCase;
     final title = _toTitleCase(name);
+    final patternDesc = config.designPattern.description;
 
     return '''import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -333,7 +335,7 @@ Widget _createTestWidget(${pascal}Bloc bloc) {
                   },
                 );
               case StateStatus.success:
-                return const Center(child: Text('$title screen'));
+                return const Center(child: Text('$title screen\\n$patternDesc', textAlign: TextAlign.center));
             }
           },
         ),
@@ -367,7 +369,7 @@ void main() {
 
       await tester.pumpWidget(_createTestWidget(mockBloc));
 
-      expect(find.text('$title screen'), findsOneWidget);
+      expect(find.text('$title screen\\n$patternDesc'), findsOneWidget);
     });
 
     testWidgets('shows error message on failure', (tester) async {
