@@ -42,7 +42,8 @@ class PlatformConfigurator {
     final appTag = RegExp(r'(\s*)<application');
     final match = appTag.firstMatch(content);
     if (match == null) {
-      stderr.writeln('Warning: Could not find <application> in AndroidManifest.xml.');
+      stderr.writeln(
+          'Warning: Could not find <application> in AndroidManifest.xml.');
       stderr.writeln('Add these permissions manually:');
       for (final line in linesToAdd) {
         stderr.writeln('  $line');
@@ -119,11 +120,13 @@ class PlatformConfigurator {
     // Find the last </dict> before </plist>
     final closingDict = content.lastIndexOf('</dict>');
     if (closingDict == -1) {
-      stderr.writeln('Warning: Could not parse Info.plist. Add NSAppTransportSecurity manually.');
+      stderr.writeln(
+          'Warning: Could not parse Info.plist. Add NSAppTransportSecurity manually.');
       return;
     }
 
-    content = '${content.substring(0, closingDict)}$atsBlock\n${'</dict>'}${content.substring(closingDict + '</dict>'.length)}';
+    content =
+        '${content.substring(0, closingDict)}$atsBlock\n${'</dict>'}${content.substring(closingDict + '</dict>'.length)}';
     await file.writeAsString(content);
     print('    + NSAppTransportSecurity (NSAllowsArbitraryLoads = true)');
   }
@@ -186,7 +189,8 @@ class PlatformConfigurator {
 
     // Remove the NSAppTransportSecurity block (key + dict)
     content = content.replaceFirst(
-      RegExp(r'\s*<key>NSAppTransportSecurity</key>\s*<dict>\s*<key>NSAllowsArbitraryLoads</key>\s*<true/>\s*</dict>'),
+      RegExp(
+          r'\s*<key>NSAppTransportSecurity</key>\s*<dict>\s*<key>NSAllowsArbitraryLoads</key>\s*<true/>\s*</dict>'),
       '',
     );
 
@@ -373,7 +377,8 @@ class PlatformConfigurator {
 
     await file.writeAsString(content);
     final fileName = isKts ? 'build.gradle.kts' : 'build.gradle';
-    print('    + $fileName: dart-defines decoding + applicationIdSuffix + resValue');
+    print(
+        '    + $fileName: dart-defines decoding + applicationIdSuffix + resValue');
   }
 
   static String _injectGroovy(String content, String pascalName) {
@@ -515,9 +520,9 @@ $_gradleMarker
     // Remove the defaultConfig flavor lines (both Groovy and Kotlin patterns)
     content = content.replaceFirst(
       RegExp(
-        r"\n\s*// FlutterMint: apply flavor suffixes from dart-defines\n"
-        r"[\s\S]*?"
-        r"(?:resValue[^\n]*\n)",
+        r'\n\s*// FlutterMint: apply flavor suffixes from dart-defines\n'
+        r'[\s\S]*?'
+        r'(?:resValue[^\n]*\n)',
       ),
       '',
     );
