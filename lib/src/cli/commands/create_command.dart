@@ -46,10 +46,14 @@ class CreateCommand extends Command<void> {
         [
           'MVVM (Model-View-ViewModel) — Provider + ChangeNotifier',
           'MVI (Model-View-Intent) — BLoC + Equatable',
+          'MVVM + Riverpod — flutter_riverpod + AsyncNotifier',
         ],
       );
-      final designPattern =
-          patternChoice == 2 ? DesignPattern.mvi : DesignPattern.mvvm;
+      final designPattern = switch (patternChoice) {
+        2 => DesignPattern.mvi,
+        3 => DesignPattern.riverpod,
+        _ => DesignPattern.mvvm,
+      };
 
       config = ProjectConfig(
         appName: appName,

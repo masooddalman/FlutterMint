@@ -45,14 +45,14 @@ class StatusCommand extends Command<void> {
       print('  + ${module.displayName}$tag');
     }
 
-    // Available (not installed) modules
-    final oppositePatternId =
-        config.designPattern.id == 'mvi' ? 'mvvm' : 'mvi';
+    // Available (not installed) modules — exclude incompatible ones
+    final excluded =
+        ModuleRegistry.excludedIdsForPattern(config.designPattern);
     final availableModules = allModules
         .where((m) =>
             !config.modules.contains(m.id) &&
             !m.isDefault &&
-            m.id != oppositePatternId)
+            !excluded.contains(m.id))
         .toList();
 
     if (availableModules.isNotEmpty) {

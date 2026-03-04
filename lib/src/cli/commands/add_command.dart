@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
-import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/config/forge_config.dart';
 import 'package:fluttermint/src/generator/module_adder.dart';
 import 'package:fluttermint/src/modules/module.dart';
@@ -32,13 +31,13 @@ class AddCommand extends Command<void> {
       return;
     }
 
-    // 2. Find available modules (not yet installed, excluding opposite pattern)
+    // 2. Find available modules (not yet installed, excluding incompatible ones)
     final allModules = ModuleRegistry.allModules;
-    final oppositePatternId =
-        forgeConfig.designPattern == DesignPattern.mvi ? 'mvvm' : 'mvi';
+    final excluded =
+        ModuleRegistry.excludedIdsForPattern(forgeConfig.designPattern);
     final availableModules = allModules
         .where((m) =>
-            !forgeConfig.modules.contains(m.id) && m.id != oppositePatternId)
+            !forgeConfig.modules.contains(m.id) && !excluded.contains(m.id))
         .toList();
 
     if (availableModules.isEmpty) {
