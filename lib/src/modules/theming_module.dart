@@ -13,10 +13,12 @@ class ThemingModule extends Module {
   bool get isDefault => false;
 
   @override
-  List<String> get dependsOn => ['mvvm'];
+  List<String> get dependsOn => [];
 
   @override
-  Map<String, String> get dependencies => {};
+  Map<String, String> get dependencies => {
+        'provider': '^6.1.0',
+      };
 
   @override
   Map<String, String> get devDependencies => {};
