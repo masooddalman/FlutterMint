@@ -99,6 +99,7 @@ class ProjectGenerator {
     final forgeConfig = ForgeConfig(
       appName: config.appName,
       org: config.org,
+      designPattern: config.designPattern,
       modules: config.selectedModules,
       flavorsConfig: config.flavorsConfig,
       platforms: config.platforms,

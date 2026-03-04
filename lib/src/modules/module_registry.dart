@@ -1,3 +1,4 @@
+import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/modules/ai_module.dart';
 import 'package:fluttermint/src/modules/api_module.dart';
 import 'package:fluttermint/src/modules/cicd_module.dart';
@@ -6,6 +7,7 @@ import 'package:fluttermint/src/modules/localization_module.dart';
 import 'package:fluttermint/src/modules/locator_module.dart';
 import 'package:fluttermint/src/modules/logging_module.dart';
 import 'package:fluttermint/src/modules/module.dart';
+import 'package:fluttermint/src/modules/mvi_module.dart';
 import 'package:fluttermint/src/modules/mvvm_module.dart';
 import 'package:fluttermint/src/modules/routing_module.dart';
 import 'package:fluttermint/src/modules/startup_module.dart';
@@ -18,6 +20,7 @@ class ModuleRegistry {
 
   static final List<Module> _allModules = [
     MvvmModule(),
+    MviModule(),
     LoggingModule(),
     LocatorModule(),
     ThemingModule(),
@@ -34,8 +37,26 @@ class ModuleRegistry {
 
   static List<Module> get allModules => _allModules;
 
+  /// Default module IDs (backward compat — assumes MVVM).
   static List<String> get defaultModuleIds =>
-      _allModules.where((m) => m.isDefault).map((m) => m.id).toList();
+      defaultModuleIdsForPattern(DesignPattern.mvvm);
+
+  /// Default module IDs for the given design pattern.
+  static List<String> defaultModuleIdsForPattern(DesignPattern pattern) {
+    final excluded = pattern == DesignPattern.mvvm ? 'mvi' : 'mvvm';
+    return _allModules
+        .where((m) => m.isDefault && m.id != excluded)
+        .map((m) => m.id)
+        .toList();
+  }
+
+  /// Optional (non-default) modules, excluding the opposite pattern.
+  static List<Module> optionalModulesForPattern(DesignPattern pattern) {
+    final excluded = pattern == DesignPattern.mvvm ? 'mvi' : 'mvvm';
+    return _allModules
+        .where((m) => !m.isDefault && m.id != excluded)
+        .toList();
+  }
 
   static List<Module> get optionalModules =>
       _allModules.where((m) => !m.isDefault).toList();

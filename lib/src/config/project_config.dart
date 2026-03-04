@@ -1,4 +1,5 @@
 import 'package:fluttermint/src/config/cicd_config.dart';
+import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/config/flavors_config.dart';
 
 class ProjectConfig {
@@ -6,6 +7,7 @@ class ProjectConfig {
     required this.appName,
     required this.selectedModules,
     this.org = 'com.example',
+    this.designPattern = DesignPattern.mvvm,
     this.cicdConfig,
     this.flavorsConfig,
     this.platforms = const ['android', 'ios'],
@@ -13,10 +15,13 @@ class ProjectConfig {
 
   final String appName;
   final String org;
+  final DesignPattern designPattern;
   final List<String> selectedModules;
   final CicdConfig? cicdConfig;
   final FlavorsConfig? flavorsConfig;
   final List<String> platforms;
+
+  bool get isMvi => designPattern == DesignPattern.mvi;
 
   /// Full package identifier (e.g. com.mycompany.my_app).
   String get packageId => '$org.$appName';

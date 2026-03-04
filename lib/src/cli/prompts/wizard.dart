@@ -1,4 +1,5 @@
 import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/config/flavors_config.dart';
 import 'package:fluttermint/src/config/platform_config.dart';
 import 'package:fluttermint/src/config/project_config.dart';
@@ -31,13 +32,30 @@ class Wizard {
       return run(null);
     }
 
+    // Design pattern selection
+    print('');
+    print('Select architecture pattern:');
+    print('');
+    final patternChoice = PromptUtils.askChoice(
+      'Architecture pattern',
+      [
+        'MVVM (Model-View-ViewModel) — Provider + ChangeNotifier',
+        'MVI (Model-View-Intent) — BLoC + Equatable',
+      ],
+    );
+    final designPattern =
+        patternChoice == 2 ? DesignPattern.mvi : DesignPattern.mvvm;
+
     print('');
     print('Select optional modules to include:');
     print('');
 
-    // Start with default modules
-    final selectedModules = <String>[...ModuleRegistry.defaultModuleIds];
-    final optionalModules = ModuleRegistry.optionalModules;
+    // Start with default modules for the chosen pattern
+    final selectedModules = <String>[
+      ...ModuleRegistry.defaultModuleIdsForPattern(designPattern),
+    ];
+    final optionalModules =
+        ModuleRegistry.optionalModulesForPattern(designPattern);
 
     for (var i = 0; i < optionalModules.length; i++) {
       final module = optionalModules[i];
@@ -87,6 +105,7 @@ class Wizard {
     print('Project: $appName');
     print('Organization: $org');
     print('Package: $org.$appName');
+    print('Architecture: ${designPattern.displayName}');
     print('Platforms: ${selectedPlatforms.join(", ")}');
     print('Modules: ${selectedModules.join(", ")}');
     if (flavorsConfig != null) {
@@ -103,6 +122,7 @@ class Wizard {
     return ProjectConfig(
       appName: appName,
       org: org,
+      designPattern: designPattern,
       selectedModules: selectedModules,
       flavorsConfig: flavorsConfig,
       platforms: selectedPlatforms,

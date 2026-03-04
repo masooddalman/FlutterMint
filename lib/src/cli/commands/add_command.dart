@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
+import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/config/forge_config.dart';
 import 'package:fluttermint/src/generator/module_adder.dart';
 import 'package:fluttermint/src/modules/module.dart';
@@ -31,10 +32,14 @@ class AddCommand extends Command<void> {
       return;
     }
 
-    // 2. Find available modules (not yet installed)
+    // 2. Find available modules (not yet installed, excluding opposite pattern)
     final allModules = ModuleRegistry.allModules;
-    final availableModules =
-        allModules.where((m) => !forgeConfig.modules.contains(m.id)).toList();
+    final oppositePatternId =
+        forgeConfig.designPattern == DesignPattern.mvi ? 'mvvm' : 'mvi';
+    final availableModules = allModules
+        .where((m) =>
+            !forgeConfig.modules.contains(m.id) && m.id != oppositePatternId)
+        .toList();
 
     if (availableModules.isEmpty) {
       print('All modules are already installed!');

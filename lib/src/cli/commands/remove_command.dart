@@ -38,8 +38,9 @@ class RemoveCommand extends Command<void> {
         .toList();
 
     if (removableModules.isEmpty) {
+      final patternName = forgeConfig.designPattern.displayName;
       print('No removable modules found.');
-      print('Default modules (mvvm, logging) cannot be removed.');
+      print('Default modules ($patternName, logging) cannot be removed.');
       return;
     }
 
@@ -77,7 +78,7 @@ class RemoveCommand extends Command<void> {
           'Error: Cannot remove default module "$requestedId".',
         );
         stderr.writeln(
-          'Default modules (mvvm, logging) are required for the project structure.',
+          'Default modules (${forgeConfig.designPattern.id}, logging) are required for the project structure.',
         );
         return;
       }

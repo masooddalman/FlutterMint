@@ -1,6 +1,8 @@
 import 'package:args/command_runner.dart';
 
+import 'package:fluttermint/src/cli/prompts/prompt_utils.dart';
 import 'package:fluttermint/src/cli/prompts/wizard.dart';
+import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/config/project_config.dart';
 import 'package:fluttermint/src/generator/project_generator.dart';
 import 'package:fluttermint/src/modules/module_registry.dart';
@@ -35,9 +37,25 @@ class CreateCommand extends Command<void> {
         return;
       }
 
+      // Prompt for design pattern even in quick create
+      print('');
+      print('Select architecture pattern:');
+      print('');
+      final patternChoice = PromptUtils.askChoice(
+        'Architecture pattern',
+        [
+          'MVVM (Model-View-ViewModel) — Provider + ChangeNotifier',
+          'MVI (Model-View-Intent) — BLoC + Equatable',
+        ],
+      );
+      final designPattern =
+          patternChoice == 2 ? DesignPattern.mvi : DesignPattern.mvvm;
+
       config = ProjectConfig(
         appName: appName,
-        selectedModules: ModuleRegistry.defaultModuleIds,
+        designPattern: designPattern,
+        selectedModules:
+            ModuleRegistry.defaultModuleIdsForPattern(designPattern),
       );
     }
 

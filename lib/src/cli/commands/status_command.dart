@@ -31,6 +31,7 @@ class StatusCommand extends Command<void> {
 
     print('');
     print('FlutterMint Project: ${config.appName}');
+    print('Architecture: ${config.designPattern.displayName}');
     print('');
 
     // Installed modules
@@ -45,10 +46,14 @@ class StatusCommand extends Command<void> {
     }
 
     // Available (not installed) modules
-    final availableModules =
-        allModules
-            .where((m) => !config.modules.contains(m.id) && !m.isDefault)
-            .toList();
+    final oppositePatternId =
+        config.designPattern.id == 'mvi' ? 'mvvm' : 'mvi';
+    final availableModules = allModules
+        .where((m) =>
+            !config.modules.contains(m.id) &&
+            !m.isDefault &&
+            m.id != oppositePatternId)
+        .toList();
 
     if (availableModules.isNotEmpty) {
       print('');

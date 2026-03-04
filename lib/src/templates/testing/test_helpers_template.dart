@@ -51,6 +51,238 @@ Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
 ''';
   }
 
+  static String generateTestHelpersMvi(ProjectConfig config) {
+    return '''import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:${config.appNameSnakeCase}/domain/repositories/home_repository.dart';
+import 'package:${config.appNameSnakeCase}/domain/usecases/get_home_data_usecase.dart';
+import 'package:${config.appNameSnakeCase}/features/home/models/home_model.dart';
+
+// --- Mocks ---
+
+class MockHomeRepository extends Mock implements HomeRepository {}
+
+class MockGetHomeDataUseCase extends Mock implements GetHomeDataUseCase {}
+
+// --- Test data ---
+
+const testHomeModel = HomeModel();
+
+// --- Widget helpers ---
+
+/// Wraps a widget with MaterialApp for testing
+Widget createTestableWidget(Widget child) {
+  return MaterialApp(
+    home: child,
+  );
+}
+
+/// Pumps a widget and waits for animations to settle
+Future<void> pumpAndSettle(WidgetTester tester, Widget widget) async {
+  await tester.pumpWidget(createTestableWidget(widget));
+  await tester.pumpAndSettle();
+}
+
+/// Helper to find widgets by type
+Finder findByType<T>() => find.byType(T);
+
+/// Helper to find widgets by text
+Finder findByText(String text) => find.text(text);
+
+/// Helper to tap a widget and settle
+Future<void> tapAndSettle(WidgetTester tester, Finder finder) async {
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+''';
+  }
+
+  static String generateBlocTestExample(ProjectConfig config) {
+    return '''import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:${config.appNameSnakeCase}/core/base/base_state.dart';
+import 'package:${config.appNameSnakeCase}/features/home/bloc/home_bloc.dart';
+import 'package:${config.appNameSnakeCase}/features/home/bloc/home_event.dart';
+import 'package:${config.appNameSnakeCase}/features/home/bloc/home_state.dart';
+import '../../helpers/test_helpers.dart';
+
+void main() {
+  late MockGetHomeDataUseCase mockGetHomeData;
+  late HomeBloc bloc;
+
+  setUp(() {
+    mockGetHomeData = MockGetHomeDataUseCase();
+    bloc = HomeBloc(mockGetHomeData);
+  });
+
+  tearDown(() => bloc.close());
+
+  group('HomeBloc', () {
+    test('initial state is correct', () {
+      expect(bloc.state, const HomeState());
+      expect(bloc.state.status, StateStatus.initial);
+      expect(bloc.state.data, isNull);
+    });
+
+    blocTest<HomeBloc, HomeState>(
+      'emits [loading, success] when data is fetched successfully',
+      build: () {
+        when(() => mockGetHomeData()).thenAnswer(
+          (_) async => testHomeModel,
+        );
+        return bloc;
+      },
+      act: (bloc) => bloc.add(const HomeLoadRequested()),
+      expect: () => [
+        const HomeState(status: StateStatus.loading),
+        isA<HomeState>()
+            .having((s) => s.status, 'status', StateStatus.success)
+            .having((s) => s.data, 'data', isNotNull),
+      ],
+    );
+
+    blocTest<HomeBloc, HomeState>(
+      'emits [loading, error] when fetching fails',
+      build: () {
+        when(() => mockGetHomeData()).thenThrow(Exception('Network error'));
+        return bloc;
+      },
+      act: (bloc) => bloc.add(const HomeLoadRequested()),
+      expect: () => [
+        const HomeState(status: StateStatus.loading),
+        isA<HomeState>()
+            .having((s) => s.status, 'status', StateStatus.error)
+            .having(
+                (s) => s.errorMessage, 'errorMessage', contains('Network error')),
+      ],
+    );
+  });
+}
+''';
+  }
+
+  static String generateWidgetTestExampleMvi(ProjectConfig config) {
+    return '''import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:${config.appNameSnakeCase}/core/base/base_state.dart';
+import 'package:${config.appNameSnakeCase}/features/home/bloc/home_bloc.dart';
+import 'package:${config.appNameSnakeCase}/features/home/bloc/home_event.dart';
+import 'package:${config.appNameSnakeCase}/features/home/bloc/home_state.dart';
+import '../../helpers/test_helpers.dart';
+
+class MockHomeBloc extends MockBloc<HomeEvent, HomeState>
+    implements HomeBloc {}
+
+void main() {
+  late MockHomeBloc mockBloc;
+
+  setUp(() {
+    mockBloc = MockHomeBloc();
+  });
+
+  group('HomeView', () {
+    testWidgets('shows loading indicator when loading', (tester) async {
+      when(() => mockBloc.state).thenReturn(
+        const HomeState(status: StateStatus.loading),
+      );
+
+      await tester.pumpWidget(
+        createTestableWidget(
+          BlocProvider<HomeBloc>.value(
+            value: mockBloc,
+            child: BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, state) {
+                switch (state.status) {
+                  case StateStatus.initial:
+                  case StateStatus.loading:
+                    return const Center(child: CircularProgressIndicator());
+                  case StateStatus.error:
+                    return Center(child: Text(state.errorMessage ?? 'Error'));
+                  case StateStatus.success:
+                    return const Center(child: Text('Home screen'));
+                }
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('shows content on success', (tester) async {
+      when(() => mockBloc.state).thenReturn(
+        const HomeState(status: StateStatus.success),
+      );
+
+      await tester.pumpWidget(
+        createTestableWidget(
+          BlocProvider<HomeBloc>.value(
+            value: mockBloc,
+            child: BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, state) {
+                switch (state.status) {
+                  case StateStatus.initial:
+                  case StateStatus.loading:
+                    return const Center(child: CircularProgressIndicator());
+                  case StateStatus.error:
+                    return Center(child: Text(state.errorMessage ?? 'Error'));
+                  case StateStatus.success:
+                    return const Center(child: Text('Home screen'));
+                }
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Home screen'), findsOneWidget);
+    });
+
+    testWidgets('shows error message on failure', (tester) async {
+      when(() => mockBloc.state).thenReturn(
+        const HomeState(
+          status: StateStatus.error,
+          errorMessage: 'Something went wrong',
+        ),
+      );
+
+      await tester.pumpWidget(
+        createTestableWidget(
+          BlocProvider<HomeBloc>.value(
+            value: mockBloc,
+            child: BlocBuilder<HomeBloc, HomeState>(
+              builder: (context, state) {
+                switch (state.status) {
+                  case StateStatus.initial:
+                  case StateStatus.loading:
+                    return const Center(child: CircularProgressIndicator());
+                  case StateStatus.error:
+                    return Center(child: Text(state.errorMessage ?? 'Error'));
+                  case StateStatus.success:
+                    return const Center(child: Text('Home screen'));
+                }
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Something went wrong'), findsOneWidget);
+    });
+  });
+}
+''';
+  }
+
   static String generateUnitTestExample(ProjectConfig config) {
     return '''import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

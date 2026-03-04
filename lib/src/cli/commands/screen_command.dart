@@ -39,10 +39,13 @@ class ScreenCommand extends Command<void> {
       return;
     }
 
-    // Check MVVM module is installed
-    if (!forgeConfig.modules.contains('mvvm')) {
-      stderr.writeln('Error: The MVVM module is required to add screens.');
-      stderr.writeln('Run "fluttermint add mvvm" first.');
+    // Check architecture module is installed
+    if (!forgeConfig.modules.contains('mvvm') &&
+        !forgeConfig.modules.contains('mvi')) {
+      stderr.writeln(
+        'Error: An architecture module (MVVM or MVI) is required to add screens.',
+      );
+      stderr.writeln('Run "fluttermint add mvvm" or "fluttermint add mvi" first.');
       return;
     }
 

@@ -23,6 +23,21 @@ class PromptUtils {
     return input == 'y' || input == 'yes';
   }
 
+  static int askChoice(String prompt, List<String> options, {int defaultValue = 1}) {
+    for (var i = 0; i < options.length; i++) {
+      print('  ${i + 1}. ${options[i]}');
+    }
+    print('');
+    stdout.write('$prompt [$defaultValue]: ');
+    final input = stdin.readLineSync()?.trim();
+    if (input == null || input.isEmpty) return defaultValue;
+    final parsed = int.tryParse(input);
+    if (parsed != null && parsed >= 1 && parsed <= options.length) {
+      return parsed;
+    }
+    return defaultValue;
+  }
+
   static void printHeader(String text) {
     final line = '─' * (text.length + 4);
     print('');

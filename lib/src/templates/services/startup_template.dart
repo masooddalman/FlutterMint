@@ -83,6 +83,176 @@ class StartupViewModel extends BaseViewModel {
 ''';
   }
 
+  // --- MVI / BLoC variants ---
+
+  static String generateStartupBloc(ProjectConfig config) {
+    return '''import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:${config.appNameSnakeCase}/app/startup/startup_event.dart';
+import 'package:${config.appNameSnakeCase}/app/startup/startup_service.dart';
+import 'package:${config.appNameSnakeCase}/app/startup/startup_state.dart';
+
+class StartupBloc extends Bloc<StartupEvent, StartupBlocState> {
+  StartupBloc() : super(const StartupBlocState()) {
+    on<StartupInitializeRequested>(_onInitialize);
+    on<StartupRetryRequested>(_onRetry);
+  }
+
+  final StartupService _startupService = StartupService();
+
+  Future<void> _onInitialize(
+    StartupInitializeRequested event,
+    Emitter<StartupBlocState> emit,
+  ) async {
+    emit(state.copyWith(status: StartupStatus.loading));
+    await _startupService.initialize();
+    switch (_startupService.state) {
+      case StartupState.success:
+        emit(state.copyWith(status: StartupStatus.success));
+      case StartupState.error:
+        emit(state.copyWith(
+          status: StartupStatus.error,
+          errorMessage: _startupService.errorMessage ?? 'Initialization failed',
+        ));
+      case StartupState.loading:
+        break;
+    }
+  }
+
+  Future<void> _onRetry(
+    StartupRetryRequested event,
+    Emitter<StartupBlocState> emit,
+  ) async {
+    await _onInitialize(const StartupInitializeRequested(), emit);
+  }
+}
+''';
+  }
+
+  static String generateStartupEvent(ProjectConfig config) {
+    return '''import 'package:${config.appNameSnakeCase}/core/base/base_event.dart';
+
+sealed class StartupEvent extends BaseEvent {
+  const StartupEvent();
+}
+
+final class StartupInitializeRequested extends StartupEvent {
+  const StartupInitializeRequested();
+}
+
+final class StartupRetryRequested extends StartupEvent {
+  const StartupRetryRequested();
+}
+''';
+  }
+
+  static String generateStartupState(ProjectConfig config) {
+    return '''import 'package:equatable/equatable.dart';
+
+enum StartupStatus { initial, loading, success, error }
+
+final class StartupBlocState extends Equatable {
+  const StartupBlocState({
+    this.status = StartupStatus.initial,
+    this.errorMessage,
+  });
+
+  final StartupStatus status;
+  final String? errorMessage;
+
+  StartupBlocState copyWith({
+    StartupStatus? status,
+    String? errorMessage,
+  }) {
+    return StartupBlocState(
+      status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+
+  @override
+  List<Object?> get props => [status, errorMessage];
+}
+''';
+  }
+
+  static String generateStartupViewMvi(ProjectConfig config) {
+    final hasLocator = config.hasModule('locator');
+    final locatorImport = hasLocator
+        ? "import 'package:${config.appNameSnakeCase}/app/locator.dart';\n"
+        : '';
+    final createBloc = hasLocator
+        ? 'locator<StartupBloc>()'
+        : 'StartupBloc()';
+
+    return '''import 'package:flutter/material.dart';
+
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:${config.appNameSnakeCase}/app/startup/startup_bloc.dart';
+import 'package:${config.appNameSnakeCase}/app/startup/startup_event.dart';
+import 'package:${config.appNameSnakeCase}/app/startup/startup_state.dart';
+$locatorImport
+class StartupView extends StatelessWidget {
+  const StartupView({super.key, required this.onReady});
+
+  final VoidCallback onReady;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => $createBloc..add(const StartupInitializeRequested()),
+      child: BlocConsumer<StartupBloc, StartupBlocState>(
+        listener: (context, state) {
+          if (state.status == StartupStatus.success) {
+            onReady();
+          }
+        },
+        builder: (context, state) {
+          return Scaffold(
+            body: Center(
+              child: _buildContent(context, state),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, StartupBlocState state) {
+    switch (state.status) {
+      case StartupStatus.initial:
+      case StartupStatus.loading:
+        return const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 24),
+            Text('Initializing...'),
+          ],
+        );
+      case StartupStatus.success:
+        return const Icon(Icons.check_circle, size: 64, color: Colors.green);
+      case StartupStatus.error:
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(state.errorMessage ?? 'An error occurred'),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => context.read<StartupBloc>().add(const StartupRetryRequested()),
+              child: const Text('Retry'),
+            ),
+          ],
+        );
+    }
+  }
+}
+''';
+  }
+
   static String generateStartupView(ProjectConfig config) {
     final hasLocator = config.hasModule('locator');
     final locatorImport = hasLocator

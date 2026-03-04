@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/config/forge_config.dart';
 import 'package:fluttermint/src/config/project_config.dart';
 import 'package:fluttermint/src/generator/file_writer.dart';
+import 'package:fluttermint/src/templates/mvi/mvi_screen_template.dart';
 import 'package:fluttermint/src/templates/mvvm/screen_template.dart';
 
 class ScreenGenerator {
@@ -19,28 +21,18 @@ class ScreenGenerator {
     final config = ProjectConfig(
       appName: forgeConfig.appName,
       org: forgeConfig.org,
+      designPattern: forgeConfig.designPattern,
       selectedModules: forgeConfig.modules,
       cicdConfig: forgeConfig.cicdConfig,
     );
     final pascal = ProjectConfig.toPascalCase(screenName);
+    final isMvi = forgeConfig.designPattern == DesignPattern.mvi;
 
     // Step 1: Generate feature files
     _printStep(1, 'Generating $screenName screen files...');
-    final files = {
-      'lib/features/$screenName/models/${screenName}_model.dart':
-          ScreenTemplate.generateModel(screenName, config),
-      'lib/features/$screenName/viewmodels/${screenName}_viewmodel.dart':
-          ScreenTemplate.generateViewModel(screenName, config),
-      'lib/features/$screenName/views/${screenName}_view.dart':
-          ScreenTemplate.generateView(screenName, config, params: params),
-      'lib/domain/repositories/${screenName}_repository.dart':
-          ScreenTemplate.generateRepository(screenName, config),
-      'lib/data/repositories/${screenName}_repository.dart':
-          ScreenTemplate.generateRepositoryImpl(screenName, config),
-      'lib/domain/usecases/get_${screenName}_data_usecase.dart':
-          ScreenTemplate.generateUseCase(screenName, config),
-      'lib/features/$screenName/widgets/.gitkeep': '',
-    };
+    final files = isMvi
+        ? _mviFiles(screenName, config, params)
+        : _mvvmFiles(screenName, config, params);
 
     var filesCreated = 0;
     for (final entry in files.entries) {
@@ -56,7 +48,11 @@ class ScreenGenerator {
     // Step 2: Inject into locator.dart
     if (forgeConfig.modules.contains('locator')) {
       _printStep(2, 'Updating locator.dart...');
-      await _injectLocator(projectPath, config, screenName, pascal);
+      if (isMvi) {
+        await _injectLocatorMvi(projectPath, config, screenName, pascal);
+      } else {
+        await _injectLocator(projectPath, config, screenName, pascal);
+      }
     } else {
       _printStep(2, 'Skipping locator (module not installed)');
     }
@@ -72,12 +68,9 @@ class ScreenGenerator {
     // Step 4: Generate tests
     if (forgeConfig.modules.contains('testing')) {
       _printStep(4, 'Generating tests...');
-      final testFiles = {
-        'test/features/$screenName/${screenName}_viewmodel_test.dart':
-            ScreenTemplate.generateUnitTest(screenName, config),
-        'test/features/$screenName/${screenName}_view_test.dart':
-            ScreenTemplate.generateWidgetTest(screenName, config),
-      };
+      final testFiles = isMvi
+          ? _mviTestFiles(screenName, config)
+          : _mvvmTestFiles(screenName, config);
       for (final entry in testFiles.entries) {
         final filePath = p.join(projectPath, entry.key);
         if (await File(filePath).exists()) {
@@ -91,19 +84,28 @@ class ScreenGenerator {
       _printStep(4, 'Skipping tests (module not installed)');
     }
 
+    // Summary
+    final patternDir = isMvi ? 'bloc' : 'viewmodels';
+    final patternFile = isMvi ? '${screenName}_bloc.dart' : '${screenName}_viewmodel.dart';
+    final testFile = isMvi ? '${screenName}_bloc_test.dart' : '${screenName}_viewmodel_test.dart';
+
     print('');
     print('=== Screen "$screenName" created ($filesCreated files) ===');
     print('');
     print('Generated:');
     print('  + features/$screenName/models/${screenName}_model.dart');
-    print('  + features/$screenName/viewmodels/${screenName}_viewmodel.dart');
+    print('  + features/$screenName/$patternDir/$patternFile');
+    if (isMvi) {
+      print('  + features/$screenName/bloc/${screenName}_event.dart');
+      print('  + features/$screenName/bloc/${screenName}_state.dart');
+    }
     print('  + features/$screenName/views/${screenName}_view.dart');
     print('  + features/$screenName/widgets/');
     print('  + domain/repositories/${screenName}_repository.dart');
     print('  + data/repositories/${screenName}_repository.dart');
     print('  + domain/usecases/get_${screenName}_data_usecase.dart');
     if (forgeConfig.modules.contains('testing')) {
-      print('  + test/features/$screenName/${screenName}_viewmodel_test.dart');
+      print('  + test/features/$screenName/$testFile');
       print('  + test/features/$screenName/${screenName}_view_test.dart');
     }
     if (forgeConfig.modules.contains('locator')) {
@@ -119,6 +121,70 @@ class ScreenGenerator {
     }
     print('');
   }
+
+  // --- File maps ---
+
+  Map<String, String> _mvvmFiles(
+      String name, ProjectConfig config, Map<String, String> params) {
+    return {
+      'lib/features/$name/models/${name}_model.dart':
+          ScreenTemplate.generateModel(name, config),
+      'lib/features/$name/viewmodels/${name}_viewmodel.dart':
+          ScreenTemplate.generateViewModel(name, config),
+      'lib/features/$name/views/${name}_view.dart':
+          ScreenTemplate.generateView(name, config, params: params),
+      'lib/domain/repositories/${name}_repository.dart':
+          ScreenTemplate.generateRepository(name, config),
+      'lib/data/repositories/${name}_repository.dart':
+          ScreenTemplate.generateRepositoryImpl(name, config),
+      'lib/domain/usecases/get_${name}_data_usecase.dart':
+          ScreenTemplate.generateUseCase(name, config),
+      'lib/features/$name/widgets/.gitkeep': '',
+    };
+  }
+
+  Map<String, String> _mviFiles(
+      String name, ProjectConfig config, Map<String, String> params) {
+    return {
+      'lib/features/$name/models/${name}_model.dart':
+          MviScreenTemplate.generateModel(name, config),
+      'lib/features/$name/bloc/${name}_bloc.dart':
+          MviScreenTemplate.generateBloc(name, config),
+      'lib/features/$name/bloc/${name}_event.dart':
+          MviScreenTemplate.generateEvent(name, config),
+      'lib/features/$name/bloc/${name}_state.dart':
+          MviScreenTemplate.generateState(name, config),
+      'lib/features/$name/views/${name}_view.dart':
+          MviScreenTemplate.generateView(name, config, params: params),
+      'lib/domain/repositories/${name}_repository.dart':
+          MviScreenTemplate.generateRepository(name, config),
+      'lib/data/repositories/${name}_repository.dart':
+          MviScreenTemplate.generateRepositoryImpl(name, config),
+      'lib/domain/usecases/get_${name}_data_usecase.dart':
+          MviScreenTemplate.generateUseCase(name, config),
+      'lib/features/$name/widgets/.gitkeep': '',
+    };
+  }
+
+  Map<String, String> _mvvmTestFiles(String name, ProjectConfig config) {
+    return {
+      'test/features/$name/${name}_viewmodel_test.dart':
+          ScreenTemplate.generateUnitTest(name, config),
+      'test/features/$name/${name}_view_test.dart':
+          ScreenTemplate.generateWidgetTest(name, config),
+    };
+  }
+
+  Map<String, String> _mviTestFiles(String name, ProjectConfig config) {
+    return {
+      'test/features/$name/${name}_bloc_test.dart':
+          MviScreenTemplate.generateUnitTest(name, config),
+      'test/features/$name/${name}_view_test.dart':
+          MviScreenTemplate.generateWidgetTest(name, config),
+    };
+  }
+
+  // --- Locator injection ---
 
   Future<void> _injectLocator(
     String projectPath,
@@ -151,6 +217,50 @@ class ScreenGenerator {
       '  locator.registerFactory(() => ${pascal}ViewModel(locator<Get${pascal}DataUseCase>()));',
     ];
 
+    content = _insertImportsAndRegistrations(content, newImports, newRegistrations);
+    await file.writeAsString(content);
+  }
+
+  Future<void> _injectLocatorMvi(
+    String projectPath,
+    ProjectConfig config,
+    String name,
+    String pascal,
+  ) async {
+    final locatorPath = p.join(projectPath, 'lib', 'app', 'locator.dart');
+    final file = File(locatorPath);
+    if (!await file.exists()) return;
+
+    var content = await file.readAsString();
+    final pkg = config.appNameSnakeCase;
+
+    // Check if already injected
+    if (content.contains('${pascal}Repository')) return;
+
+    // Build new imports
+    final newImports = [
+      "import 'package:$pkg/data/repositories/${name}_repository.dart';",
+      "import 'package:$pkg/domain/repositories/${name}_repository.dart';",
+      "import 'package:$pkg/domain/usecases/get_${name}_data_usecase.dart';",
+      "import 'package:$pkg/features/$name/bloc/${name}_bloc.dart';",
+    ];
+
+    // Build new registrations
+    final newRegistrations = [
+      '  locator.registerLazySingleton<${pascal}Repository>(() => ${pascal}RepositoryImpl());',
+      '  locator.registerLazySingleton(() => Get${pascal}DataUseCase(locator<${pascal}Repository>()));',
+      '  locator.registerFactory(() => ${pascal}Bloc(locator<Get${pascal}DataUseCase>()));',
+    ];
+
+    content = _insertImportsAndRegistrations(content, newImports, newRegistrations);
+    await file.writeAsString(content);
+  }
+
+  String _insertImportsAndRegistrations(
+    String content,
+    List<String> newImports,
+    List<String> newRegistrations,
+  ) {
     // Find the last import line and insert after it
     final lines = content.split('\n');
     var lastImportIndex = -1;
@@ -172,8 +282,10 @@ class ScreenGenerator {
           '${content.substring(closingIndex)}';
     }
 
-    await file.writeAsString(content);
+    return content;
   }
+
+  // --- Router injection ---
 
   Future<void> _injectRouter(
     String projectPath,
