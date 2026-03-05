@@ -17,16 +17,17 @@ class PreferenceGenerator {
   /// Returns the list of supported type names.
   static List<String> get supportedTypes => _typeMap.keys.toList();
 
-  /// Generates a typed accessor method and injects it into preferences_service.dart.
+  /// Generates a typed getter/setter pair and injects it into preferences_service.dart.
   ///
   /// For `name: 'userEmail'`, `type: 'String'`, generates:
   /// ```dart
-  /// String? userEmail([String? value]) {
+  /// String? get userEmail => _prefs.getString('user_email');
+  /// set userEmail(String? value) {
   ///   if (value != null) {
   ///     _prefs.setString('user_email', value);
-  ///     return value;
+  ///   } else {
+  ///     _prefs.remove('user_email');
   ///   }
-  ///   return _prefs.getString('user_email');
   /// }
   /// ```
   Future<bool> generate(
@@ -72,7 +73,7 @@ class PreferenceGenerator {
     }
 
     // Check if already exists
-    if (content.contains('$type? $name(')) {
+    if (content.contains('get $name =>') || content.contains('set $name(')) {
       stderr.writeln('Error: Preference "$name" already exists.');
       return false;
     }
@@ -80,21 +81,19 @@ class PreferenceGenerator {
     // Build the storage key from camelCase to snake_case
     final key = _toSnakeCase(name);
 
-    // Determine the nullable return type
-    final returnType = '$type?';
-
-    // Generate the accessor method
-    final method = '''  $returnType $name([$type? value]) {
+    // Generate getter/setter pair
+    final accessor = '''  $type? get $name => _prefs.get$suffix('$key');
+  set $name($type? value) {
     if (value != null) {
       _prefs.set$suffix('$key', value);
-      return value;
+    } else {
+      _prefs.remove('$key');
     }
-    return _prefs.get$suffix('$key');
   }
 
   $_marker''';
 
-    content = content.replaceFirst(_marker, method);
+    content = content.replaceFirst(_marker, accessor);
     await file.writeAsString(content);
 
     return true;

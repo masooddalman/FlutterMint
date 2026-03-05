@@ -102,10 +102,10 @@ class _PrefAddCommand extends Command<void> {
       print('');
       print('Usage:');
       print('  // Read');
-      print('  final value = preferencesService.$prefName();');
+      print('  final value = preferencesService.$prefName;');
       print('');
       print('  // Write');
-      print('  preferencesService.$prefName(newValue);');
+      print('  preferencesService.$prefName = newValue;');
       print('');
     }
   }
