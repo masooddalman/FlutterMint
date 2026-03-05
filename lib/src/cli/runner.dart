@@ -9,6 +9,7 @@ import 'package:fluttermint/src/cli/commands/create_command.dart';
 import 'package:fluttermint/src/cli/commands/disable_http_command.dart';
 import 'package:fluttermint/src/cli/commands/enable_http_command.dart';
 import 'package:fluttermint/src/cli/commands/platform_command.dart';
+import 'package:fluttermint/src/cli/commands/preference_command.dart';
 import 'package:fluttermint/src/cli/commands/remove_command.dart';
 import 'package:fluttermint/src/cli/commands/run_command.dart';
 import 'package:fluttermint/src/cli/logo.dart';
@@ -30,6 +31,7 @@ class FlutterMintRunner extends CommandRunner<void> {
     addCommand(RunCommand());
     addCommand(BuildCommand());
     addCommand(PlatformCommand());
+    addCommand(PreferenceCommand());
     argParser.addFlag(
       'version',
       abbr: 'v',

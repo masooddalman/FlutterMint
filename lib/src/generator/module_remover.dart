@@ -34,6 +34,7 @@ class ModuleRemover {
     // Build ProjectConfig with remaining modules for shared file composition
     final projectConfig = ProjectConfig(
       appName: forgeConfig.appName,
+      designPattern: forgeConfig.designPattern,
       selectedModules: remainingIds,
       cicdConfig: forgeConfig.cicdConfig,
       flavorsConfig: moduleIdsToRemove.contains('flavors') ? null : forgeConfig.flavorsConfig,
@@ -48,7 +49,7 @@ class ModuleRemover {
     await _removeUnusedDeps(projectPath, modulesToRemove, remainingModules);
 
     // Step 3: Regenerate shared files with remaining modules
-    _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
+    _printStep(3, 'Regenerating shared files (main.dart, app.dart, locator.dart)...');
     await _composer.compose(projectPath, projectConfig, remainingModules);
 
     // Step 4a: Revert native platform config for flavors

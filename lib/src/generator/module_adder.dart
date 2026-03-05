@@ -8,12 +8,14 @@ import 'package:fluttermint/src/generator/file_writer.dart';
 import 'package:fluttermint/src/generator/platform_configurator.dart';
 import 'package:fluttermint/src/generator/pubspec_editor.dart';
 import 'package:fluttermint/src/generator/shared_file_composer.dart';
+import 'package:fluttermint/src/generator/shared_file_updater.dart';
 import 'package:fluttermint/src/modules/module.dart';
 import 'package:fluttermint/src/modules/module_registry.dart';
 
 class ModuleAdder {
   final FileWriter _fileWriter = FileWriter();
   final PubspecEditor _pubspecEditor = PubspecEditor();
+  final SharedFileUpdater _updater = SharedFileUpdater();
   final SharedFileComposer _composer = SharedFileComposer();
 
   Future<void> add(
@@ -36,6 +38,7 @@ class ModuleAdder {
     // Build ProjectConfig with ALL modules for shared file composition
     final projectConfig = ProjectConfig(
       appName: forgeConfig.appName,
+      designPattern: forgeConfig.designPattern,
       selectedModules: allModuleIds,
       cicdConfig: forgeConfig.cicdConfig,
       flavorsConfig: forgeConfig.flavorsConfig,
@@ -50,9 +53,16 @@ class ModuleAdder {
     _printStep(2, 'Generating module files...');
     await _generateNewModuleFiles(projectPath, projectConfig, newModules);
 
-    // Step 3: Regenerate shared files with ALL modules
+    // Step 3: Update shared files
+    // - app.dart: regenerate via composer (theming/toast/localization embed
+    //   structural content in the template that can't be injected incrementally)
+    // - main.dart & locator.dart: incremental injection (preserves user edits)
     _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
-    await _composer.compose(projectPath, projectConfig, allModules);
+    await _composer.composeAppDart(projectPath, projectConfig, allModules);
+    for (final module in newModules) {
+      await _updater.injectMain(projectPath, projectConfig, module);
+      await _updater.injectLocator(projectPath, projectConfig, module);
+    }
 
     // Step 4: Configure platform files
     if (newModuleIds.contains('api') || newModuleIds.contains('flavors')) {

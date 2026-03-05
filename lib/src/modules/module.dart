@@ -35,4 +35,7 @@ abstract class Module {
   List<String> providerDeclarations(ProjectConfig config);
 
   List<String> appImports(ProjectConfig config);
+
+  /// Provider overrides injected into ProviderScope in main.dart (Riverpod).
+  List<String> mainProviderOverrides(ProjectConfig config) => [];
 }

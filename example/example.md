@@ -19,6 +19,14 @@ fluttermint remove toast
 fluttermint status
 ```
 
+## Add a preference
+
+```bash
+# Add a typed preference (requires preferences module)
+fluttermint pref add userEmail String
+fluttermint pref add darkMode bool
+```
+
 ## Generate a screen
 
 ```bash

@@ -16,7 +16,7 @@ class SharedFileComposer {
     List<Module> modules,
   ) async {
     await _composeMainDart(projectPath, config, modules);
-    await _composeAppDart(projectPath, config, modules);
+    await composeAppDart(projectPath, config, modules);
 
     if (config.hasModule('locator')) {
       await _composeLocatorDart(projectPath, config, modules);
@@ -31,16 +31,19 @@ class SharedFileComposer {
   ) async {
     final imports = <String>[];
     final setupLines = <String>[];
+    final overrides = <String>[];
 
     for (final module in modules) {
       imports.addAll(module.mainImports(config));
       setupLines.addAll(module.mainSetupLines(config));
+      overrides.addAll(module.mainProviderOverrides(config));
     }
 
     final content = MainTemplate.generate(
       config: config,
       imports: imports,
       setupLines: setupLines,
+      overrides: overrides,
     );
 
     await _fileWriter.write(
@@ -49,7 +52,7 @@ class SharedFileComposer {
     );
   }
 
-  Future<void> _composeAppDart(
+  Future<void> composeAppDart(
     String projectPath,
     ProjectConfig config,
     List<Module> modules,

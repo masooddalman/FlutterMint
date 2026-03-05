@@ -5,6 +5,7 @@ import 'package:fluttermint/src/modules/cicd_module.dart';
 import 'package:fluttermint/src/modules/flavors_module.dart';
 import 'package:fluttermint/src/modules/localization_module.dart';
 import 'package:fluttermint/src/modules/locator_module.dart';
+import 'package:fluttermint/src/modules/preferences_module.dart';
 import 'package:fluttermint/src/modules/logging_module.dart';
 import 'package:fluttermint/src/modules/module.dart';
 import 'package:fluttermint/src/modules/mvi_module.dart';
@@ -28,6 +29,7 @@ class ModuleRegistry {
     ThemingModule(),
     RoutingModule(),
     ApiModule(),
+    PreferencesModule(),
     AiModule(),
     LocalizationModule(),
     StartupModule(),

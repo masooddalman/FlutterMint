@@ -31,7 +31,7 @@ Beyond initial scaffolding, FlutterMint manages the project lifecycle. You can a
 
 - **Interactive wizard** — guided project setup with architecture pattern selection, module selection, and organization/package name configuration
 - **3 architecture patterns** — MVVM (Provider), MVI (BLoC), and MVVM + Riverpod — choose during project creation
-- **15 modules** — architecture patterns, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, testing, CI/CD, and flavors/environments
+- **16 modules** — architecture patterns, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, preferences, testing, CI/CD, and flavors/environments
 - **Screen generator** — `fluttermint screen <name>` scaffolds a complete screen (viewmodel/bloc/notifier + view + domain layer) with auto-injection into locator and router, optional route parameters, and test generation
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
@@ -112,7 +112,23 @@ fluttermint remove theming
 fluttermint status
 ```
 
-Adding or removing a module automatically updates `pubspec.yaml` and recomposes `main.dart`, `app.dart`, and `locator.dart`.
+Adding a module incrementally updates `locator.dart` and `main.dart` (preserving your edits) and regenerates `app.dart`. Removing a module regenerates all shared files to ensure structural correctness.
+
+### Add a preference
+
+```bash
+# Add a typed preference (requires preferences module)
+fluttermint pref add userEmail String
+
+# Supported types: String, int, double, bool, List<String>
+fluttermint pref add darkMode bool
+```
+
+This generates a getter/setter pair in `preferences_service.dart`:
+```dart
+String? get userEmail => _prefs.getString('user_email');
+set userEmail(String? value) { ... }
+```
 
 ### Add a screen
 
@@ -241,6 +257,7 @@ Opens an interactive wizard to configure:
 | **localization** | ARB-based localization with English and Arabic starter files | `intl ^0.20.2` |
 | **startup** | Splash/initialization flow with pattern-appropriate startup logic | — |
 | **toast** | Toast notifications via `ScaffoldMessenger` | — |
+| **preferences** | SharedPreferences wrapper with typed getter/setter generation via `fluttermint pref add` | `shared_preferences ^2.2.0` |
 | **testing** | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
 | **cicd** | GitHub Actions workflow with build, test, and deployment steps | — |
 | **flavors** | Per-environment JSON configs with compile-time `EnvConfig` via `--dart-define-from-file` | — |
@@ -269,6 +286,8 @@ my_app/
 │   │   ├── routing/app_router.dart           # GoRouter config + RoutePaths
 │   │   ├── config/
 │   │   │   └── env_config.dart               # Compile-time env constants
+│   │   ├── preferences/
+│   │   │   └── preferences_service.dart      # SharedPreferences typed accessors
 │   │   ├── services/
 │   │   │   ├── logger_service.dart           # Logging
 │   │   │   └── toast_service.dart            # Toast notifications
@@ -407,7 +426,7 @@ flavors:
 2. **Module resolution** — topological sort resolves dependency order
 3. **Pubspec editing** — module dependencies are injected into `pubspec.yaml`
 4. **File generation** — each module emits its files via `generateFiles()`
-5. **Shared file composition** — `main.dart`, `app.dart`, and `locator.dart` are composed by collecting imports, setup lines, provider declarations, and service registrations from all active modules
+5. **Shared file composition** — `main.dart`, `app.dart`, and `locator.dart` are composed by collecting imports, setup lines, provider declarations, and service registrations from all active modules. When adding modules later, `locator.dart` and `main.dart` are updated incrementally (preserving user edits), while `app.dart` is regenerated. When removing modules, all shared files are regenerated
 6. **Platform configuration** — Android permissions are added to `AndroidManifest.xml` when the API module is included; flavors inject dart-defines decoding into `build.gradle(.kts)` for native app name and package name suffixes
 7. **`flutter pub get`** — resolves the dependency tree
 8. **Config persistence** — `.fluttermint.yaml` records the project state
