@@ -89,7 +89,7 @@ class _PrefAddCommand extends Command<void> {
         'Select value type',
         supportedTypes,
       );
-      type = supportedTypes[choice];
+      type = supportedTypes[choice - 1];
     }
 
     // Generate
