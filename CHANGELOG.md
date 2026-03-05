@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Non-destructive module add — `locator.dart` and `main.dart` are updated incrementally, preserving user edits.
+- Module removal regenerates shared files correctly, including structural changes (MaterialApp properties, widget class types).
+- `pref add` generates getter/setter accessors instead of method-based accessors.
+- Add `preferences` module for SharedPreferences with typed getter/setter generation via `fluttermint pref add`.
+- Fix missing `designPattern` propagation in add/remove commands (caused wrong code generation for MVI/Riverpod projects).
+- Fix Windows line-ending normalization in shared file updates.
+
 ## 0.2.0
 
 - Add MVI (BLoC + Equatable) as second architecture pattern.
