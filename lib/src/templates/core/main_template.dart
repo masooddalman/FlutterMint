@@ -8,6 +8,7 @@ class MainTemplate {
     required ProjectConfig config,
     required List<String> imports,
     required List<String> setupLines,
+    List<String> overrides = const [],
   }) {
     final importBlock = imports.isNotEmpty
         ? imports.map((i) => "import '$i';").join('\n')
@@ -19,9 +20,24 @@ class MainTemplate {
 
     final isRiverpod = config.designPattern == DesignPattern.riverpod;
     final appWidget = '${config.appNamePascalCase}App()';
-    final runAppLine = isRiverpod
-        ? '  runApp(const ProviderScope(child: $appWidget));'
-        : '  runApp(const $appWidget);';
+
+    String runAppLine;
+    if (isRiverpod && overrides.isNotEmpty) {
+      final overrideBlock =
+          overrides.map((o) => '        $o,').join('\n');
+      runAppLine = '''  runApp(
+    ProviderScope(
+      overrides: [
+$overrideBlock
+      ],
+      child: const $appWidget,
+    ),
+  );''';
+    } else if (isRiverpod) {
+      runAppLine = '  runApp(const ProviderScope(child: $appWidget));';
+    } else {
+      runAppLine = '  runApp(const $appWidget);';
+    }
 
     return '''import 'package:flutter/material.dart';
 import 'package:${config.appNameSnakeCase}/app/app.dart';
