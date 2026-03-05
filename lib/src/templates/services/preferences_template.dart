@@ -32,6 +32,8 @@ class PreferencesService {
   Future<bool> remove(String key) => _prefs.remove(key);
 
   Future<bool> clear() => _prefs.clear();
+
+  // Add more preferences here
 }
 ''';
   }
