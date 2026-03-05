@@ -31,16 +31,19 @@ class SharedFileComposer {
   ) async {
     final imports = <String>[];
     final setupLines = <String>[];
+    final overrides = <String>[];
 
     for (final module in modules) {
       imports.addAll(module.mainImports(config));
       setupLines.addAll(module.mainSetupLines(config));
+      overrides.addAll(module.mainProviderOverrides(config));
     }
 
     final content = MainTemplate.generate(
       config: config,
       imports: imports,
       setupLines: setupLines,
+      overrides: overrides,
     );
 
     await _fileWriter.write(
