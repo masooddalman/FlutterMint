@@ -6,13 +6,13 @@ import 'package:fluttermint/src/config/forge_config.dart';
 import 'package:fluttermint/src/config/project_config.dart';
 import 'package:fluttermint/src/generator/platform_configurator.dart';
 import 'package:fluttermint/src/generator/pubspec_editor.dart';
-import 'package:fluttermint/src/generator/shared_file_updater.dart';
+import 'package:fluttermint/src/generator/shared_file_composer.dart';
 import 'package:fluttermint/src/modules/module.dart';
 import 'package:fluttermint/src/modules/module_registry.dart';
 
 class ModuleRemover {
   final PubspecEditor _pubspecEditor = PubspecEditor();
-  final SharedFileUpdater _updater = SharedFileUpdater();
+  final SharedFileComposer _composer = SharedFileComposer();
 
   Future<void> remove(
     String projectPath,
@@ -34,6 +34,7 @@ class ModuleRemover {
     // Build ProjectConfig with remaining modules for shared file composition
     final projectConfig = ProjectConfig(
       appName: forgeConfig.appName,
+      designPattern: forgeConfig.designPattern,
       selectedModules: remainingIds,
       cicdConfig: forgeConfig.cicdConfig,
       flavorsConfig: moduleIdsToRemove.contains('flavors') ? null : forgeConfig.flavorsConfig,
@@ -47,18 +48,9 @@ class ModuleRemover {
     _printStep(2, 'Cleaning up dependencies...');
     await _removeUnusedDeps(projectPath, modulesToRemove, remainingModules);
 
-    // Step 3: Incrementally remove module contributions from shared files
-    // Use OLD config (before removal) so module contributions are correctly computed
-    _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
-    final oldConfig = ProjectConfig(
-      appName: forgeConfig.appName,
-      selectedModules: forgeConfig.modules,
-      cicdConfig: forgeConfig.cicdConfig,
-      flavorsConfig: forgeConfig.flavorsConfig,
-    );
-    for (final module in modulesToRemove) {
-      await _updater.removeModule(projectPath, oldConfig, module);
-    }
+    // Step 3: Regenerate shared files with remaining modules
+    _printStep(3, 'Regenerating shared files (main.dart, app.dart, locator.dart)...');
+    await _composer.compose(projectPath, projectConfig, remainingModules);
 
     // Step 4a: Revert native platform config for flavors
     if (moduleIdsToRemove.contains('flavors')) {

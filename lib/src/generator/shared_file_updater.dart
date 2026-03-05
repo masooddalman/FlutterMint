@@ -16,8 +16,8 @@ class SharedFileUpdater {
     ProjectConfig config,
     Module module,
   ) async {
-    await _injectLocator(projectPath, config, module);
-    await _injectMain(projectPath, config, module);
+    await injectLocator(projectPath, config, module);
+    await injectMain(projectPath, config, module);
     await _injectApp(projectPath, config, module);
   }
 
@@ -36,7 +36,7 @@ class SharedFileUpdater {
   // Inject helpers
   // ---------------------------------------------------------------------------
 
-  Future<void> _injectLocator(
+  Future<void> injectLocator(
     String projectPath,
     ProjectConfig config,
     Module module,
@@ -48,20 +48,23 @@ class SharedFileUpdater {
     final file = File(p.join(projectPath, 'lib', 'app', 'locator.dart'));
     if (!await file.exists()) return;
 
-    var content = await file.readAsString();
-
-    // Skip if already injected
-    if (registrations.isNotEmpty && content.contains(registrations.first)) {
-      return;
-    }
+    var content = _normalizeLineEndings(await file.readAsString());
+    final original = content;
 
     content = _injectImports(content, imports);
-    content = _injectBeforeClosingBrace(content, registrations);
 
-    await file.writeAsString(content);
+    // Add registrations before closing } of setupLocator()
+    final newRegs = registrations
+        .where((r) => !content.contains(r))
+        .toList();
+    content = _injectBeforeClosingBrace(content, newRegs);
+
+    if (content != original) {
+      await file.writeAsString(content);
+    }
   }
 
-  Future<void> _injectMain(
+  Future<void> injectMain(
     String projectPath,
     ProjectConfig config,
     Module module,
@@ -74,30 +77,36 @@ class SharedFileUpdater {
     final file = File(p.join(projectPath, 'lib', 'main.dart'));
     if (!await file.exists()) return;
 
-    var content = await file.readAsString();
-
-    // Skip if already injected
-    if (setupLines.isNotEmpty && content.contains(setupLines.first)) return;
+    var content = _normalizeLineEndings(await file.readAsString());
+    final original = content;
 
     content = _injectImports(content, imports);
 
     // Add setup lines before runApp(
-    if (setupLines.isNotEmpty) {
+    final newSetupLines = setupLines
+        .where((l) => !content.contains(l))
+        .toList();
+    if (newSetupLines.isNotEmpty) {
       final runAppIndex = content.indexOf('runApp(');
       if (runAppIndex >= 0) {
         final insertion =
-            '${setupLines.map((l) => '  $l').join('\n')}\n\n';
+            '${newSetupLines.map((l) => '  $l').join('\n')}\n\n';
         content =
             '${content.substring(0, runAppIndex)}$insertion${content.substring(runAppIndex)}';
       }
     }
 
     // Add provider overrides into ProviderScope
-    if (overrides.isNotEmpty) {
-      content = _injectProviderOverrides(content, overrides);
+    final newOverrides = overrides
+        .where((o) => !content.contains(o))
+        .toList();
+    if (newOverrides.isNotEmpty) {
+      content = _injectProviderOverrides(content, newOverrides);
     }
 
-    await file.writeAsString(content);
+    if (content != original) {
+      await file.writeAsString(content);
+    }
   }
 
   Future<void> _injectApp(
@@ -112,18 +121,21 @@ class SharedFileUpdater {
     final file = File(p.join(projectPath, 'lib', 'app', 'app.dart'));
     if (!await file.exists()) return;
 
-    var content = await file.readAsString();
-
-    // Skip if already present
-    if (providers.isNotEmpty && content.contains(providers.first)) return;
+    var content = _normalizeLineEndings(await file.readAsString());
+    final original = content;
 
     content = _injectImports(content, imports);
 
-    if (providers.isNotEmpty) {
-      content = _injectProviders(content, providers);
+    final newProviders = providers
+        .where((p) => !content.contains(p))
+        .toList();
+    if (newProviders.isNotEmpty) {
+      content = _injectProviders(content, newProviders);
     }
 
-    await file.writeAsString(content);
+    if (content != original) {
+      await file.writeAsString(content);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -142,7 +154,7 @@ class SharedFileUpdater {
     final file = File(p.join(projectPath, 'lib', 'app', 'locator.dart'));
     if (!await file.exists()) return;
 
-    var content = await file.readAsString();
+    var content = _normalizeLineEndings(await file.readAsString());
 
     for (final imp in imports) {
       content = content.replaceAll("import '$imp';\n", '');
@@ -168,7 +180,7 @@ class SharedFileUpdater {
     final file = File(p.join(projectPath, 'lib', 'main.dart'));
     if (!await file.exists()) return;
 
-    var content = await file.readAsString();
+    var content = _normalizeLineEndings(await file.readAsString());
 
     for (final imp in imports) {
       content = content.replaceAll("import '$imp';\n", '');
@@ -210,7 +222,7 @@ class SharedFileUpdater {
     final file = File(p.join(projectPath, 'lib', 'app', 'app.dart'));
     if (!await file.exists()) return;
 
-    var content = await file.readAsString();
+    var content = _normalizeLineEndings(await file.readAsString());
 
     for (final imp in imports) {
       content = content.replaceAll("import '$imp';\n", '');
@@ -372,6 +384,11 @@ $providerLines
     }
 
     return content;
+  }
+
+  /// Normalizes Windows \r\n line endings to \n.
+  String _normalizeLineEndings(String content) {
+    return content.replaceAll('\r\n', '\n');
   }
 
   /// Removes runs of 3+ consecutive newlines, replacing with double newlines.

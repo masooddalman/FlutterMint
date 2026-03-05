@@ -16,7 +16,7 @@ class SharedFileComposer {
     List<Module> modules,
   ) async {
     await _composeMainDart(projectPath, config, modules);
-    await _composeAppDart(projectPath, config, modules);
+    await composeAppDart(projectPath, config, modules);
 
     if (config.hasModule('locator')) {
       await _composeLocatorDart(projectPath, config, modules);
@@ -52,7 +52,7 @@ class SharedFileComposer {
     );
   }
 
-  Future<void> _composeAppDart(
+  Future<void> composeAppDart(
     String projectPath,
     ProjectConfig config,
     List<Module> modules,
