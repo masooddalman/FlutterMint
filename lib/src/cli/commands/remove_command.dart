@@ -110,7 +110,7 @@ class RemoveCommand extends Command<void> {
       print('  - ${module.displayName}');
     }
     print('');
-    print('Note: main.dart, app.dart, and locator.dart will be regenerated.');
+    print('Note: main.dart, app.dart, and locator.dart will be updated (existing edits preserved).');
     print('');
     final confirm = PromptUtils.askYesNo('Proceed?', defaultValue: true);
     if (!confirm) {

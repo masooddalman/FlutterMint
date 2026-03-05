@@ -7,14 +7,14 @@ import 'package:fluttermint/src/config/project_config.dart';
 import 'package:fluttermint/src/generator/file_writer.dart';
 import 'package:fluttermint/src/generator/platform_configurator.dart';
 import 'package:fluttermint/src/generator/pubspec_editor.dart';
-import 'package:fluttermint/src/generator/shared_file_composer.dart';
+import 'package:fluttermint/src/generator/shared_file_updater.dart';
 import 'package:fluttermint/src/modules/module.dart';
 import 'package:fluttermint/src/modules/module_registry.dart';
 
 class ModuleAdder {
   final FileWriter _fileWriter = FileWriter();
   final PubspecEditor _pubspecEditor = PubspecEditor();
-  final SharedFileComposer _composer = SharedFileComposer();
+  final SharedFileUpdater _updater = SharedFileUpdater();
 
   Future<void> add(
     String projectPath,
@@ -50,9 +50,11 @@ class ModuleAdder {
     _printStep(2, 'Generating module files...');
     await _generateNewModuleFiles(projectPath, projectConfig, newModules);
 
-    // Step 3: Regenerate shared files with ALL modules
+    // Step 3: Incrementally inject new modules into shared files
     _printStep(3, 'Updating shared files (main.dart, app.dart, locator.dart)...');
-    await _composer.compose(projectPath, projectConfig, allModules);
+    for (final module in newModules) {
+      await _updater.injectModule(projectPath, projectConfig, module);
+    }
 
     // Step 4: Configure platform files
     if (newModuleIds.contains('api') || newModuleIds.contains('flavors')) {
