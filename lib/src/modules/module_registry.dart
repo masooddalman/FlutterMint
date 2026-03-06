@@ -2,6 +2,7 @@ import 'package:fluttermint/src/config/design_pattern.dart';
 import 'package:fluttermint/src/modules/ai_module.dart';
 import 'package:fluttermint/src/modules/api_module.dart';
 import 'package:fluttermint/src/modules/cicd_module.dart';
+import 'package:fluttermint/src/modules/database_module.dart';
 import 'package:fluttermint/src/modules/flavors_module.dart';
 import 'package:fluttermint/src/modules/localization_module.dart';
 import 'package:fluttermint/src/modules/locator_module.dart';
@@ -30,6 +31,7 @@ class ModuleRegistry {
     RoutingModule(),
     ApiModule(),
     PreferencesModule(),
+    DatabaseModule(),
     AiModule(),
     LocalizationModule(),
     StartupModule(),
