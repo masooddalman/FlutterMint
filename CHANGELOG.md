@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Add `database` module for local SQLite database (sqflite) with auto-registration in GetIt locator.
+- Add `fluttermint db add <table> --col name:Type` command — generates model class with `toMap()`/`fromMap()`, CREATE TABLE migration, and full CRUD methods (insert, getAll, getById, update, delete).
+- Add `fluttermint db remove <table>` command — removes model file, CREATE TABLE SQL, import, and CRUD methods.
+
 ## 0.2.1
 
 - Non-destructive module add — `locator.dart` and `main.dart` are updated incrementally, preserving user edits.
