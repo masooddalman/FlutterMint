@@ -53,7 +53,7 @@ class DatabaseGenerator {
     }
 
     // Check if table already exists
-    if (content.contains("'$tableName'")) {
+    if (content.contains('CREATE TABLE $tableName(')) {
       stderr.writeln('Error: Table "$tableName" already exists.');
       return false;
     }
@@ -312,7 +312,7 @@ $providerSuffix''';
     content = content.replaceAll('\r\n', '\n');
 
     // Check table exists
-    if (!content.contains("'$tableName'")) {
+    if (!content.contains('CREATE TABLE $tableName(')) {
       stderr.writeln('Error: Table "$tableName" not found in database_service.dart.');
       return false;
     }
@@ -387,7 +387,7 @@ $providerSuffix''';
 
     // Remove registration
     content = content.replaceAll(
-      RegExp('  locator\\.registerLazySingleton<${className}Dao>\\([^)]*\\);\\n'),
+      '  locator.registerLazySingleton<${className}Dao>(() => ${className}Dao(locator<DatabaseService>()));\n',
       '',
     );
 
