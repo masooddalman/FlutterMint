@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:fluttermint/src/config/design_pattern.dart';
+import 'package:fluttermint/src/config/forge_config.dart';
+
 class DatabaseGenerator {
   static const _tableMarker = '// Add table creation here';
-  static const _methodMarker = '// Add more tables here';
 
   /// Supported Dart types and their SQLite column types.
   static const _typeMap = {
@@ -18,11 +20,12 @@ class DatabaseGenerator {
   /// Returns the list of supported type names.
   static List<String> get supportedTypes => _typeMap.keys.toList();
 
-  /// Generates a model class and injects table creation + CRUD into database_service.dart.
+  /// Generates a model class, a DAO file, injects CREATE TABLE, and registers DAO in DI.
   Future<bool> generate(
     String projectPath,
     String tableName,
     List<ColumnDef> columns,
+    ForgeConfig config,
   ) async {
     final serviceFile = File(p.join(
       projectPath,
@@ -49,16 +52,8 @@ class DatabaseGenerator {
       return false;
     }
 
-    if (!content.contains(_methodMarker)) {
-      stderr.writeln('Error: Method marker not found in database_service.dart.');
-      stderr.writeln('Add "$_methodMarker" inside the DatabaseService class.');
-      return false;
-    }
-
     // Check if table already exists
-    final className = _toPascalCase(tableName);
-    if (content.contains("'$tableName'") ||
-        content.contains('// --- $className CRUD ---')) {
+    if (content.contains("'$tableName'")) {
       stderr.writeln('Error: Table "$tableName" already exists.');
       return false;
     }
@@ -66,7 +61,10 @@ class DatabaseGenerator {
     // 1. Generate model file
     await _generateModel(projectPath, tableName, columns);
 
-    // 2. Inject CREATE TABLE into _onCreate
+    // 2. Generate DAO file
+    await _generateDao(projectPath, tableName, columns, config);
+
+    // 3. Inject CREATE TABLE into _onCreate
     final columnDefs = columns
         .map((c) => '${c.name} ${_typeMap[c.type]}')
         .join(', ');
@@ -75,26 +73,14 @@ class DatabaseGenerator {
         '    $_tableMarker';
     content = content.replaceFirst(_tableMarker, createSql);
 
-    // 3. Add import for model
-    final modelImport =
-        "import '${_toSnakeCase(className)}.dart';";
-    if (!content.contains(modelImport)) {
-      // Add relative import — models sit next to the service in the same dir
-      // We need to use the models/ subfolder import
-      final importLine =
-          "import 'models/${_toSnakeCase(className)}.dart';";
-      final lastImportIndex = content.lastIndexOf(RegExp(r'^import .*;\n', multiLine: true));
-      if (lastImportIndex >= 0) {
-        final endOfImport = content.indexOf('\n', lastImportIndex) + 1;
-        content = '${content.substring(0, endOfImport)}$importLine\n${content.substring(endOfImport)}';
-      }
+    await serviceFile.writeAsString(content);
+
+    // 4. Register DAO in locator (for locator-based projects)
+    if (config.designPattern != DesignPattern.riverpod &&
+        config.modules.contains('locator')) {
+      await _registerInLocator(projectPath, tableName, config);
     }
 
-    // 4. Inject CRUD methods
-    final crud = _generateCrud(tableName, className, columns);
-    content = content.replaceFirst(_methodMarker, '$crud\n  $_methodMarker');
-
-    await serviceFile.writeAsString(content);
     return true;
   }
 
@@ -163,26 +149,56 @@ $fromMapEntries    );
     await file.writeAsString(model);
   }
 
-  String _generateCrud(
+  Future<void> _generateDao(
+    String projectPath,
     String tableName,
-    String className,
     List<ColumnDef> columns,
-  ) {
-    return '''// --- $className CRUD ---
+    ForgeConfig config,
+  ) async {
+    final className = _toPascalCase(tableName);
+    final modelFileName = _toSnakeCase(className);
+    final daoFileName = '${_toSnakeCase(className)}_dao';
 
-  Future<int> insert$className($className item) async {
-    final db = await database;
+    final isRiverpod = config.designPattern == DesignPattern.riverpod;
+    final appName = _toSnakeCase(config.appName);
+
+    final imports = StringBuffer();
+    imports.writeln("import '../database_service.dart';");
+    imports.writeln("import '../models/$modelFileName.dart';");
+    if (isRiverpod) {
+      imports.writeln();
+      imports.writeln("import 'package:flutter_riverpod/flutter_riverpod.dart';");
+      imports.writeln("import 'package:$appName/core/database/database_providers.dart';");
+    }
+
+    final providerSuffix = isRiverpod
+        ? '''
+
+final ${_toCamelCase(className)}DaoProvider = Provider<${className}Dao>((ref) {
+  return ${className}Dao(ref.read(databaseServiceProvider));
+});
+'''
+        : '';
+
+    final dao = '''$imports
+class ${className}Dao {
+  ${className}Dao(this._db);
+
+  final DatabaseService _db;
+
+  Future<int> insert($className item) async {
+    final db = await _db.database;
     return db.insert('$tableName', item.toMap());
   }
 
-  Future<List<$className>> getAll$className() async {
-    final db = await database;
+  Future<List<$className>> getAll() async {
+    final db = await _db.database;
     final maps = await db.query('$tableName');
     return maps.map((m) => $className.fromMap(m)).toList();
   }
 
-  Future<$className?> get${className}ById(int id) async {
-    final db = await database;
+  Future<$className?> getById(int id) async {
+    final db = await _db.database;
     final maps = await db.query(
       '$tableName',
       where: 'id = ?',
@@ -192,8 +208,8 @@ $fromMapEntries    );
     return $className.fromMap(maps.first);
   }
 
-  Future<int> update$className($className item) async {
-    final db = await database;
+  Future<int> update($className item) async {
+    final db = await _db.database;
     return db.update(
       '$tableName',
       item.toMap(),
@@ -202,20 +218,80 @@ $fromMapEntries    );
     );
   }
 
-  Future<int> delete$className(int id) async {
-    final db = await database;
+  Future<int> delete(int id) async {
+    final db = await _db.database;
     return db.delete(
       '$tableName',
       where: 'id = ?',
       whereArgs: [id],
     );
-  }''';
+  }
+}
+$providerSuffix''';
+
+    final dir = Directory(
+        p.join(projectPath, 'lib', 'core', 'database', 'dao'));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+
+    final file = File(p.join(dir.path, '$daoFileName.dart'));
+    await file.writeAsString(dao);
   }
 
-  /// Removes a table's model file, CREATE TABLE SQL, import, and CRUD methods.
+  Future<void> _registerInLocator(
+    String projectPath,
+    String tableName,
+    ForgeConfig config,
+  ) async {
+    final className = _toPascalCase(tableName);
+    final daoFileName = '${_toSnakeCase(className)}_dao';
+    final appName = _toSnakeCase(config.appName);
+
+    final locatorFile = File(p.join(projectPath, 'lib', 'app', 'locator.dart'));
+    if (!await locatorFile.exists()) return;
+
+    var content = await locatorFile.readAsString();
+    content = content.replaceAll('\r\n', '\n');
+
+    final importLine =
+        "import 'package:$appName/core/database/dao/$daoFileName.dart';";
+    final registration =
+        'locator.registerLazySingleton<${className}Dao>(() => ${className}Dao(locator<DatabaseService>()));';
+
+    // Skip if already registered
+    if (content.contains(registration)) return;
+
+    // Add import after last import
+    if (!content.contains(importLine)) {
+      final lines = content.split('\n');
+      var lastImportIndex = -1;
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith('import ')) {
+          lastImportIndex = i;
+        }
+      }
+      if (lastImportIndex >= 0) {
+        lines.insert(lastImportIndex + 1, importLine);
+        content = lines.join('\n');
+      }
+    }
+
+    // Add registration before closing }
+    final closingIndex = content.lastIndexOf('}');
+    if (closingIndex >= 0) {
+      content =
+          '${content.substring(0, closingIndex)}  $registration\n${content.substring(closingIndex)}';
+    }
+
+    await locatorFile.writeAsString(content);
+  }
+
+  /// Removes a table's model file, DAO file, CREATE TABLE SQL, and DI registration.
   Future<bool> remove(
     String projectPath,
     String tableName,
+    ForgeConfig config,
   ) async {
     final className = _toPascalCase(tableName);
     final fileName = _toSnakeCase(className);
@@ -236,40 +312,33 @@ $fromMapEntries    );
     content = content.replaceAll('\r\n', '\n');
 
     // Check table exists
-    if (!content.contains('// --- $className CRUD ---')) {
+    if (!content.contains("'$tableName'")) {
       stderr.writeln('Error: Table "$tableName" not found in database_service.dart.');
       return false;
     }
 
     // 1. Remove CREATE TABLE line
     content = content.replaceAll(
-      RegExp("    await db\\.execute\\('CREATE TABLE $tableName\\([^)]*\\)'\\);\n"),
+      RegExp("    await db\\.execute\\('CREATE TABLE $tableName\\([^)]*\\)'\\);\\n"),
       '',
     );
-
-    // 2. Remove model import
-    content = content.replaceAll(
-      "import 'models/$fileName.dart';\n",
-      '',
-    );
-
-    // 3. Remove CRUD block (from marker to next marker or method marker)
-    final crudStart = content.indexOf('// --- $className CRUD ---');
-    if (crudStart >= 0) {
-      // Find the end: next CRUD marker or the method marker
-      var crudEnd = content.indexOf('\n\n  // ---', crudStart + 1);
-      if (crudEnd < 0) {
-        crudEnd = content.indexOf('\n\n  $_methodMarker', crudStart);
-      }
-      if (crudEnd >= 0) {
-        content = '${content.substring(0, crudStart)}${content.substring(crudEnd + 2)}';
-      }
-    }
-
-    // Clean up extra blank lines
-    content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n');
 
     await serviceFile.writeAsString(content);
+
+    // 2. Remove DAO registration from locator (for locator-based projects)
+    if (config.designPattern != DesignPattern.riverpod &&
+        config.modules.contains('locator')) {
+      await _removeFromLocator(projectPath, tableName, config);
+    }
+
+    // 3. Delete DAO file
+    final daoFile = File(p.join(
+      projectPath, 'lib', 'core', 'database', 'dao', '${fileName}_dao.dart',
+    ));
+    if (await daoFile.exists()) {
+      await daoFile.delete();
+      print('    Deleted lib/core/database/dao/${fileName}_dao.dart');
+    }
 
     // 4. Delete model file
     final modelFile = File(p.join(
@@ -280,22 +349,55 @@ $fromMapEntries    );
       print('    Deleted lib/core/database/models/$fileName.dart');
     }
 
-    // Clean up empty models directory
-    final modelsDir = Directory(
-        p.join(projectPath, 'lib', 'core', 'database', 'models'));
-    if (await modelsDir.exists()) {
-      final entries = await modelsDir.list().toList();
-      if (entries.isEmpty) {
-        await modelsDir.delete();
+    // Clean up empty directories
+    for (final subDir in ['dao', 'models']) {
+      final dir = Directory(
+          p.join(projectPath, 'lib', 'core', 'database', subDir));
+      if (await dir.exists()) {
+        final entries = await dir.list().toList();
+        if (entries.isEmpty) {
+          await dir.delete();
+        }
       }
     }
 
     return true;
   }
 
+  Future<void> _removeFromLocator(
+    String projectPath,
+    String tableName,
+    ForgeConfig config,
+  ) async {
+    final className = _toPascalCase(tableName);
+    final daoFileName = '${_toSnakeCase(className)}_dao';
+    final appName = _toSnakeCase(config.appName);
+
+    final locatorFile = File(p.join(projectPath, 'lib', 'app', 'locator.dart'));
+    if (!await locatorFile.exists()) return;
+
+    var content = await locatorFile.readAsString();
+    content = content.replaceAll('\r\n', '\n');
+
+    // Remove import
+    content = content.replaceAll(
+      "import 'package:$appName/core/database/dao/$daoFileName.dart';\n",
+      '',
+    );
+
+    // Remove registration
+    content = content.replaceAll(
+      RegExp('  locator\\.registerLazySingleton<${className}Dao>\\([^)]*\\);\\n'),
+      '',
+    );
+
+    // Clean up extra blank lines
+    content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n');
+
+    await locatorFile.writeAsString(content);
+  }
+
   static String _toPascalCase(String input) {
-    // Convert snake_case or plural table name to PascalCase singular
-    // e.g. "users" -> "User", "order_items" -> "OrderItem"
     var name = input;
     if (name.endsWith('ies')) {
       name = '${name.substring(0, name.length - 3)}y';
@@ -308,6 +410,11 @@ $fromMapEntries    );
         .split('_')
         .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
         .join();
+  }
+
+  static String _toCamelCase(String pascalCase) {
+    if (pascalCase.isEmpty) return pascalCase;
+    return '${pascalCase[0].toLowerCase()}${pascalCase.substring(1)}';
   }
 
   static String _toSnakeCase(String input) {

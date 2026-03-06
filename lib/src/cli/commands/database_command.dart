@@ -126,19 +126,22 @@ class _DbAddCommand extends Command<void> {
     print('');
     final generator = DatabaseGenerator();
     final success =
-        await generator.generate(projectPath, tableName, columns);
+        await generator.generate(projectPath, tableName, columns, forgeConfig);
 
     if (success) {
       final className = _toPascalCase(tableName);
+      final snakeName = _toSnakeCase(className);
       print('  Created table: $tableName');
-      print('  Model: lib/core/database/models/${_toSnakeCase(className)}.dart');
+      print('  Model: lib/core/database/models/$snakeName.dart');
+      print('  DAO:   lib/core/database/dao/${snakeName}_dao.dart');
       print('');
-      print('CRUD methods added to DatabaseService:');
-      print('  insert$className($className item)');
-      print('  getAll$className()');
-      print('  get${className}ById(int id)');
-      print('  update$className($className item)');
-      print('  delete$className(int id)');
+      print('Usage:');
+      print('  final dao = locator<${className}Dao>();');
+      print('  await dao.insert($className(...));');
+      print('  await dao.getAll();');
+      print('  await dao.getById(1);');
+      print('  await dao.update($className(...));');
+      print('  await dao.delete(1);');
       print('');
     }
   }
@@ -192,11 +195,11 @@ class _DbRemoveCommand extends Command<void> {
 
     print('');
     final generator = DatabaseGenerator();
-    final success = await generator.remove(projectPath, tableName);
+    final success = await generator.remove(projectPath, tableName, forgeConfig);
 
     if (success) {
       print('  Removed table: $tableName');
-      print('  Cleaned up: CREATE TABLE, model import, CRUD methods');
+      print('  Cleaned up: CREATE TABLE, model file, DAO file');
       print('');
     }
   }

@@ -39,8 +39,6 @@ class DatabaseService {
       _database = null;
     }
   }
-
-  // Add more tables here
 }
 ''';
   }
