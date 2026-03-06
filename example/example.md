@@ -27,6 +27,14 @@ fluttermint pref add userEmail String
 fluttermint pref add darkMode bool
 ```
 
+## Add a database table
+
+```bash
+# Add a table with columns (requires database module)
+fluttermint db add users -c name:String -c email:String -c age:int
+fluttermint db add tasks -c title:String -c completed:bool
+```
+
 ## Generate a screen
 
 ```bash

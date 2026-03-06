@@ -31,7 +31,7 @@ Beyond initial scaffolding, FlutterMint manages the project lifecycle. You can a
 
 - **Interactive wizard** — guided project setup with architecture pattern selection, module selection, and organization/package name configuration
 - **3 architecture patterns** — MVVM (Provider), MVI (BLoC), and MVVM + Riverpod — choose during project creation
-- **16 modules** — architecture patterns, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, preferences, testing, CI/CD, and flavors/environments
+- **17 modules** — architecture patterns, logging, service locator, theming, routing, API client, AI service, localization, startup flow, toast notifications, preferences, local database, testing, CI/CD, and flavors/environments
 - **Screen generator** — `fluttermint screen <name>` scaffolds a complete screen (viewmodel/bloc/notifier + view + domain layer) with auto-injection into locator and router, optional route parameters, and test generation
 - **Module lifecycle** — add and remove modules post-creation with automatic dependency resolution
 - **CI/CD generator** — GitHub Actions with per-branch builds, Firebase distribution, Google Play upload, TestFlight deployment, auto-publish with release notes
@@ -129,6 +129,21 @@ This generates a getter/setter pair in `preferences_service.dart`:
 String? get userEmail => _prefs.getString('user_email');
 set userEmail(String? value) { ... }
 ```
+
+### Add a database table
+
+```bash
+# Add a table with columns (requires database module)
+fluttermint db add users -c name:String -c email:String -c age:int
+
+# Supported types: String, int, double, bool, DateTime
+fluttermint db add tasks -c title:String -c completed:bool -c dueDate:DateTime
+```
+
+This generates:
+- A model class in `lib/core/database/models/user.dart` with `toMap()`/`fromMap()`
+- CRUD methods in `DatabaseService`: `insertUser`, `getAllUser`, `getUserById`, `updateUser`, `deleteUser`
+- Table creation SQL in the `_onCreate` migration
 
 ### Add a screen
 
@@ -258,6 +273,7 @@ Opens an interactive wizard to configure:
 | **startup** | Splash/initialization flow with pattern-appropriate startup logic | — |
 | **toast** | Toast notifications via `ScaffoldMessenger` | — |
 | **preferences** | SharedPreferences wrapper with typed getter/setter generation via `fluttermint pref add` | `shared_preferences ^2.2.0` |
+| **database** | SQLite local database with model + CRUD generation via `fluttermint db add` | `sqflite ^2.3.0`, `path ^1.9.0` |
 | **testing** | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
 | **cicd** | GitHub Actions workflow with build, test, and deployment steps | — |
 | **flavors** | Per-environment JSON configs with compile-time `EnvConfig` via `--dart-define-from-file` | — |
@@ -286,6 +302,9 @@ my_app/
 │   │   ├── routing/app_router.dart           # GoRouter config + RoutePaths
 │   │   ├── config/
 │   │   │   └── env_config.dart               # Compile-time env constants
+│   │   ├── database/
+│   │   │   ├── database_service.dart         # SQLite database + CRUD methods
+│   │   │   └── models/                       # Generated table model classes
 │   │   ├── preferences/
 │   │   │   └── preferences_service.dart      # SharedPreferences typed accessors
 │   │   ├── services/
