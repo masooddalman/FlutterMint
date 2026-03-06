@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Refactor `db add` to generate a separate DAO file per table with constructor-injected `DatabaseService` (clean architecture).
+- DAO is auto-registered in GetIt locator (MVVM/MVI) or generated as a Riverpod provider.
+- `db remove` now also cleans up DAO registration from `locator.dart`.
+
 ## 0.3.0
 
 - Add `database` module for local SQLite database (sqflite) with auto-registration in GetIt locator.

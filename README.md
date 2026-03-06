@@ -142,7 +142,7 @@ fluttermint db add tasks -c title:String -c completed:bool -c dueDate:DateTime
 
 This generates:
 - A model class in `lib/core/database/models/user.dart` with `toMap()`/`fromMap()`
-- CRUD methods in `DatabaseService`: `insertUser`, `getAllUser`, `getUserById`, `updateUser`, `deleteUser`
+- A DAO file in `lib/core/database/dao/user_dao.dart` with CRUD methods (`insert`, `getAll`, `getById`, `update`, `delete`)
 - Table creation SQL in the `_onCreate` migration
 
 ### Add a screen
@@ -273,7 +273,7 @@ Opens an interactive wizard to configure:
 | **startup** | Splash/initialization flow with pattern-appropriate startup logic | — |
 | **toast** | Toast notifications via `ScaffoldMessenger` | — |
 | **preferences** | SharedPreferences wrapper with typed getter/setter generation via `fluttermint pref add` | `shared_preferences ^2.2.0` |
-| **database** | SQLite local database with model + CRUD generation via `fluttermint db add` | `sqflite ^2.3.0`, `path ^1.9.0` |
+| **database** | SQLite local database with model + DAO generation via `fluttermint db add` | `sqflite ^2.3.0`, `path ^1.9.0` |
 | **testing** | Unit and widget test examples with Mocktail mocks | `mocktail ^1.0.0` |
 | **cicd** | GitHub Actions workflow with build, test, and deployment steps | — |
 | **flavors** | Per-environment JSON configs with compile-time `EnvConfig` via `--dart-define-from-file` | — |
@@ -303,7 +303,8 @@ my_app/
 │   │   ├── config/
 │   │   │   └── env_config.dart               # Compile-time env constants
 │   │   ├── database/
-│   │   │   ├── database_service.dart         # SQLite database + CRUD methods
+│   │   │   ├── database_service.dart         # SQLite database singleton
+│   │   │   ├── dao/                          # Generated DAO files (one per table)
 │   │   │   └── models/                       # Generated table model classes
 │   │   ├── preferences/
 │   │   │   └── preferences_service.dart      # SharedPreferences typed accessors
